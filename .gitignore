@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.egg-info/
+*.egg
+dist/
+build/
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# PyInstaller
+installer_output/
+
+# Lazytool data
+.lazytool/
+
+# Gemini
+.gemini/
+
+# Pytest
+.pytest_cache/

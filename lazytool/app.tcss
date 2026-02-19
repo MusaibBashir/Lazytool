@@ -1,0 +1,252 @@
+/* LazyTool — Lazygit-inspired color scheme */
+/* Base colors from Lazygit / Dracula palette */
+
+Screen {
+    background: #1a1a2e;
+    color: #f8f8f2;
+}
+
+/* ── Main layout ──────────────────────────────── */
+
+#main-container {
+    layout: horizontal;
+    height: 1fr;
+}
+
+#left-panels {
+    width: 38;
+    min-width: 30;
+    max-width: 50;
+    height: 1fr;
+}
+
+#centre-pane {
+    width: 1fr;
+    height: 1fr;
+    border-left: solid #44475a;
+    border-right: solid #44475a;
+}
+
+#right-panels {
+    width: 38;
+    min-width: 30;
+    max-width: 50;
+    height: 1fr;
+}
+
+/* ── Panel base styling ───────────────────────── */
+
+.panel {
+    border: solid #44475a;
+    height: 1fr;
+    padding: 0 1;
+    background: #1a1a2e;
+    overflow-y: auto;
+}
+
+.panel:focus-within {
+    border: solid #50fa7b;
+}
+
+.panel-active {
+    border: solid #50fa7b;
+}
+
+.panel-title {
+    color: #8be9fd;
+    text-style: bold;
+    background: #1a1a2e;
+}
+
+/* ── List items ───────────────────────────────── */
+
+.list-item {
+    height: 1;
+    padding: 0 1;
+    color: #f8f8f2;
+    background: #1a1a2e;
+}
+
+.list-item:hover {
+    background: #2a2a4a;
+}
+
+.list-item-selected {
+    background: #44475a;
+    color: #f8f8f2;
+    text-style: bold;
+}
+
+.list-item-done {
+    color: #6272a4;
+    text-style: strike;
+}
+
+/* Priority colors */
+.priority-high {
+    color: #ff5555;
+}
+
+.priority-medium {
+    color: #f1fa8c;
+}
+
+.priority-low {
+    color: #6272a4;
+}
+
+/* ── Detail pane ──────────────────────────────── */
+
+#detail-pane {
+    padding: 1 2;
+    background: #1a1a2e;
+    overflow-y: auto;
+}
+
+#detail-title {
+    color: #50fa7b;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#detail-content {
+    color: #f8f8f2;
+}
+
+#detail-meta {
+    color: #6272a4;
+    margin-top: 1;
+}
+
+/* ── Status bar ───────────────────────────────── */
+
+#status-bar {
+    dock: bottom;
+    height: 1;
+    background: #21222c;
+    color: #f8f8f2;
+    padding: 0 1;
+}
+
+.status-key {
+    color: #50fa7b;
+    text-style: bold;
+}
+
+.status-action {
+    color: #f8f8f2;
+}
+
+.status-separator {
+    color: #6272a4;
+}
+
+/* ── Help overlay ─────────────────────────────── */
+
+#help-overlay {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.85);
+}
+
+#help-box {
+    width: 60;
+    height: auto;
+    max-height: 80%;
+    background: #282a36;
+    border: solid #50fa7b;
+    padding: 1 2;
+}
+
+#help-title {
+    color: #ff79c6;
+    text-style: bold;
+    text-align: center;
+    margin-bottom: 1;
+}
+
+.help-row {
+    height: 1;
+    padding: 0 1;
+}
+
+.help-key {
+    color: #f1fa8c;
+    text-style: bold;
+    width: 20;
+}
+
+.help-desc {
+    color: #f8f8f2;
+}
+
+/* ── Mood colors ──────────────────────────────── */
+
+.mood-amazing { color: #50fa7b; }
+.mood-great { color: #8be9fd; }
+.mood-good { color: #f1fa8c; }
+.mood-okay { color: #ffb86c; }
+.mood-bad { color: #ff79c6; }
+.mood-terrible { color: #ff5555; }
+
+/* ── Input dialog ─────────────────────────────── */
+
+#input-overlay {
+    align: center middle;
+    background: rgba(0, 0, 0, 0.85);
+}
+
+#input-box {
+    width: 60;
+    height: auto;
+    background: #282a36;
+    border: solid #50fa7b;
+    padding: 1 2;
+}
+
+#input-title {
+    color: #ff79c6;
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+#input-field {
+    background: #44475a;
+    color: #f8f8f2;
+    border: solid #6272a4;
+    padding: 0 1;
+    height: 3;
+}
+
+#input-field:focus {
+    border: solid #50fa7b;
+}
+
+/* ── Scrollbar styling ────────────────────────── */
+
+* {
+    scrollbar-color: #44475a;
+    scrollbar-color-hover: #6272a4;
+    scrollbar-color-active: #50fa7b;
+    scrollbar-background: #1a1a2e;
+    scrollbar-background-hover: #1a1a2e;
+    scrollbar-background-active: #1a1a2e;
+}
+
+/* ── Empty state ──────────────────────────────── */
+
+.empty-message {
+    color: #6272a4;
+    text-style: italic;
+    text-align: center;
+    margin-top: 2;
+}
+
+/* Right pane title bar */
+#right-title-bar {
+    height: 1;
+    background: #1a1a2e;
+    color: #8be9fd;
+    text-style: bold;
+    padding: 0 1;
+    border-bottom: solid #44475a;
+}
