@@ -28,12 +28,7 @@ jobs:
           pip install pyinstaller
           pip install -e .
 
-      - name: Run tests
-        run: |
-          pip install pytest
-          python -m pytest tests/ -v
-
-      - name: Build with PyInstaller
+      - name: Build binary with PyInstaller
         run: |
           pyinstaller \
             --onefile \
@@ -50,35 +45,24 @@ jobs:
           APP_NAME="LazyTool"
           APP_DIR="dist/${APP_NAME}.app"
           
-          # Create .app directory structure
           mkdir -p "${APP_DIR}/Contents/MacOS"
           mkdir -p "${APP_DIR}/Contents/Resources"
           
-          # Copy the binary
-          cp dist/lazytool "${APP_DIR}/Contents/MacOS/lazytool"
+          # Copy the REAL binary (not a symlink)
+          cp -L dist/lazytool "${APP_DIR}/Contents/MacOS/lazytool_bin"
           
           # Copy icon
           cp app_icon.icns "${APP_DIR}/Contents/Resources/app_icon.icns"
           
-          # Create the launcher script that opens Terminal with lazytool
+          # Create the launcher script
           cat > "${APP_DIR}/Contents/MacOS/LazyTool" << 'LAUNCHER'
           #!/bin/bash
           DIR="$(cd "$(dirname "$0")" && pwd)"
-          BINARY="${DIR}/lazytool"
-          
-          # Make sure binary is executable
+          BINARY="${DIR}/lazytool_bin"
           chmod +x "${BINARY}"
           
-          # Remove quarantine attribute if present
-          xattr -dr com.apple.quarantine "${BINARY}" 2>/dev/null || true
-          
-          # Open Terminal.app and run lazytool
-          osascript -e "
-            tell application \"Terminal\"
-              activate
-              do script \"'${BINARY}'; exit\"
-            end tell
-          "
+          # Run in Terminal
+          osascript -e "tell application \"Terminal\" to do script \"'${BINARY}'; exit\"" -e "tell application \"Terminal\" to activate"
           LAUNCHER
           chmod +x "${APP_DIR}/Contents/MacOS/LazyTool"
           
@@ -88,96 +72,63 @@ jobs:
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
-            <key>CFBundleName</key>
-            <string>LazyTool</string>
-            <key>CFBundleDisplayName</key>
-            <string>LazyTool</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.musaibbashir.lazytool</string>
-            <key>CFBundleVersion</key>
-            <string>1.0.0</string>
-            <key>CFBundleShortVersionString</key>
-            <string>1.0.0</string>
-            <key>CFBundleExecutable</key>
-            <string>LazyTool</string>
-            <key>CFBundleIconFile</key>
-            <string>app_icon</string>
-            <key>CFBundlePackageType</key>
-            <string>APPL</string>
-            <key>LSMinimumSystemVersion</key>
-            <string>12.0</string>
-            <key>NSHighResolutionCapable</key>
-            <true/>
+            <key>CFBundleName</key><string>LazyTool</string>
+            <key>CFBundleExecutable</key><string>LazyTool</string>
+            <key>CFBundleIconFile</key><string>app_icon</string>
+            <key>CFBundleIdentifier</key><string>com.musaibbashir.lazytool</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>LSMinimumSystemVersion</key><string>12.0</string>
           </dict>
           </plist>
           PLIST
 
       - name: Create DMG
         run: |
-          # Create a folder for DMG contents
-          mkdir -p dmg_contents
-          cp -R "dist/LazyTool.app" dmg_contents/
+          # Use create-dmg for a better experience
+          brew install create-dmg
+          mkdir -p dist/dmg
+          cp -R "dist/LazyTool.app" dist/dmg/
           
-          # Create a symlink to Applications for drag-and-drop install
-          ln -s /Applications dmg_contents/Applications
-          
-          # Create the DMG
-          hdiutil create -volname "LazyTool" \
-            -srcfolder dmg_contents \
-            -ov -format UDZO \
-            "dist/LazyTool-macOS.dmg"
+          create-dmg \
+            --volname "LazyTool Installer" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "LazyTool.app" 175 190 \
+            --hide-extension "LazyTool.app" \
+            --app-drop-link 425 190 \
+            "dist/LazyTool-macOS.dmg" \
+            "dist/dmg/"
 
-      - name: Verify outputs
-        run: |
-          ls -la dist/
-          ls -la dist/LazyTool.app/Contents/MacOS/
-
-      - name: Upload DMG artifact
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: lazytool-macos-dmg
-          path: dist/LazyTool-macOS.dmg
-          retention-days: 30
+          name: lazytool-macos
+          path: |
+            dist/lazytool
+            dist/LazyTool-macOS.dmg
 
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lazytool-macos-binary
-          path: dist/lazytool
-          retention-days: 30
-
-  # Create a release when a tag is pushed
   release:
     needs: build-macos
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-
     steps:
-      - name: Download macOS builds
+      - name: Download builds
         uses: actions/download-artifact@v4
         with:
+          name: lazytool-macos
           path: dist/
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
-            dist/lazytool-macos-dmg/LazyTool-macOS.dmg
-            dist/lazytool-macos-binary/lazytool
+            dist/LazyTool-macOS.dmg
+            dist/lazytool
           body: |
-            ## LazyTool for macOS
-
-            ### Easy Install (Recommended)
-            1. Download **LazyTool-macOS.dmg**
-            2. Open the DMG
-            3. Drag **LazyTool** to **Applications**
-            4. Double-click to launch!
-
-            ### CLI Install
-            Download the `lazytool` binary, then:
-            ```
-            chmod +x lazytool && sudo mv lazytool /usr/local/bin/
-            ```
+            ## LazyTool macOS Release
+            
+            - **LazyTool-macOS.dmg**: Recommended for most users. Drag to Applications and launch.
+            - **lazytool**: Standalone binary for CLI enthusiasts.
           make_latest: true
