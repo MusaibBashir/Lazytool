@@ -101,9 +101,9 @@ class StatsPanel(VerticalScroll):
             sorted_activities = sorted(hours.items(), key=lambda x: x[1], reverse=True)
             max_hours = max(hours.values()) if hours else 1
 
-            for name, h in sorted_activities:
+            for idx, (name, h) in enumerate(sorted_activities):
                 from lazytool.panels.timeline_panel import _color_for
-                color = _color_for(name)
+                color = _color_for(idx)
                 pct = int(h / max_hours * 100) if max_hours > 0 else 0
                 bar = self._activity_bar(pct, color)
                 label = name

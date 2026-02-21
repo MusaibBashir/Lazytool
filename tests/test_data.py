@@ -300,12 +300,25 @@ class TestGoalStreak:
 
 
 class TestGoalHistory:
-    def test_history_default_30_days(self, dm):
+    def test_history_new_goal_only_today(self, dm):
+        """A goal created today should only show 1 day of history."""
         dm.add_goal("Test")
         history = dm.get_goal_history(dm.goals[0], days=30)
-        assert len(history) == 30
+        assert len(history) == 1
         # First entry should be today
         assert history[0][0] == date.today().isoformat()
+
+    def test_history_respects_created_at(self, dm):
+        """History should only go back to created_at date."""
+        dm.add_goal("Test")
+        goal = dm.goals[0]
+        # Backdate created_at to 10 days ago
+        created = (date.today() - timedelta(days=10)).isoformat()
+        goal["created_at"] = created + "T00:00:00"
+        history = dm.get_goal_history(goal, days=30)
+        assert len(history) == 11  # today + 10 days back
+        assert history[0][0] == date.today().isoformat()
+        assert history[-1][0] == created
 
     def test_history_with_check_ins(self, dm):
         dm.add_goal("Test")
@@ -314,8 +327,6 @@ class TestGoalHistory:
         goal["check_ins"].append(today)
         history = dm.get_goal_history(goal, days=7)
         assert history[0] == (today, True)
-        # Other days should be False
-        assert all(not checked for _, checked in history[1:])
 
 
 # ═══════════════════════════════════════════════════════════

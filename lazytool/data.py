@@ -265,13 +265,23 @@ class DataManager:
         return streak
 
     def get_goal_history(self, goal: dict, days: int = 30) -> list[tuple[str, bool]]:
-        """Return [(date_str, was_checked_in)] for the last N days, newest first."""
+        """Return [(date_str, was_checked_in)] for the last N days, newest first.
+        Only includes days from the goal's creation date onward."""
         check_ins = set(goal.get("check_ins", []))
         today = date.today()
+        # Don't go back further than the goal's creation date
+        created_str = goal.get("created_at", "")
+        try:
+            created_date = date.fromisoformat(created_str[:10])
+        except (ValueError, TypeError):
+            created_date = today
         result = []
         for i in range(days):
-            d = (today - timedelta(days=i)).isoformat()
-            result.append((d, d in check_ins))
+            d = today - timedelta(days=i)
+            if d < created_date:
+                break
+            d_str = d.isoformat()
+            result.append((d_str, d_str in check_ins))
         return result
 
 
@@ -363,6 +373,17 @@ class DataManager:
         self._data["timeline"] = [
             ev for ev in self._data.get("timeline", []) if ev["id"] != event_id
         ]
+        self._save()
+
+    def edit_event_time(self, event_id: str, start_time: str = None, end_time: str = None):
+        """Update the start and/or end time of a timeline event."""
+        for ev in self._data.get("timeline", []):
+            if ev["id"] == event_id:
+                if start_time is not None:
+                    ev["start_time"] = start_time
+                if end_time is not None:
+                    ev["end_time"] = end_time
+                break
         self._save()
 
     # ── Settings ───────────────────────────────────────────

@@ -15,9 +15,9 @@ ACTIVITY_COLORS = [
 ]
 
 
-def _color_for(name: str) -> str:
-    """Deterministic color per activity name."""
-    return ACTIVITY_COLORS[hash(name) % len(ACTIVITY_COLORS)]
+def _color_for(index: int) -> str:
+    """Color by position index — guarantees adjacent events differ."""
+    return ACTIVITY_COLORS[index % len(ACTIVITY_COLORS)]
 
 
 def _fmt_time(iso: str) -> str:
@@ -87,7 +87,7 @@ class TimelinePanel(VerticalScroll):
             if events:
                 last = events[-1]
                 dur = _fmt_duration(self.data_manager.get_event_duration_minutes(last))
-                color = _color_for(last["name"])
+                color = _color_for(len(events) - 1)
                 name = last["name"]
                 if len(name) > 20:
                     name = name[:17] + "..."
@@ -112,7 +112,7 @@ class TimelinePanel(VerticalScroll):
         bar_width = 30
         bar = ["[dim]░[/]"] * bar_width
 
-        for ev in events:
+        for idx, ev in enumerate(events):
             try:
                 start = datetime.fromisoformat(ev["start_time"])
                 if ev.get("end_time"):
@@ -122,7 +122,7 @@ class TimelinePanel(VerticalScroll):
 
                 start_pos = int((start.hour * 60 + start.minute) / 1440 * bar_width)
                 end_pos = int((end.hour * 60 + end.minute) / 1440 * bar_width)
-                color = _color_for(ev["name"])
+                color = _color_for(idx)
 
                 for p in range(max(0, start_pos), min(bar_width, end_pos + 1)):
                     bar[p] = f"[{color}]█[/]"
@@ -210,7 +210,7 @@ class TimelinePanel(VerticalScroll):
             start = _fmt_time(ev["start_time"])
             end = _fmt_time(ev["end_time"]) if ev.get("end_time") else "now"
             dur = _fmt_duration(self.data_manager.get_event_duration_minutes(ev))
-            color = _color_for(ev["name"])
+            color = _color_for(i)
             is_active = ev.get("end_time") is None
             status = " [yellow]▶[/]" if is_active else ""
 

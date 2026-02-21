@@ -289,7 +289,10 @@ class HelpScreen(ModalScreen):
     def compose(self) -> ComposeResult:
         with VerticalScroll(id="help-container"):
             yield Static(
-                "[bold #ff79c6]LazyTool — Keyboard Shortcuts[/]\n"
+                "[bold #ff79c6]LazyTool - Be Less Lazy[/]\n"
+                "[dim]─────────────────────────────────────────[/]\n"
+                "[dim]© Musaib Bin Bashir 2026[/]\n\n"
+                "[bold cyan]Keyboard Shortcuts[/]\n"
                 "[dim]─────────────────────────────────────────[/]\n\n"
                 "[bold cyan]Navigation[/]\n"
                 "  [bold #f1fa8c]1 - 6[/]      Switch panels\n"
@@ -310,7 +313,8 @@ class HelpScreen(ModalScreen):
                 "  [bold #f1fa8c]s[/]          Set history window\n\n"
                 "[bold cyan]Timeline[/]\n"
                 "  [bold #f1fa8c]h[/]          Previous day\n"
-                "  [bold #f1fa8c]l[/]          Next day\n\n"
+                "  [bold #f1fa8c]l[/]          Next day\n"
+                "  [bold #f1fa8c]e[/]          Edit event times\n\n"
                 "[bold cyan]Stats[/]\n"
                 "  [bold #f1fa8c]s[/]          Set tracking days\n"
                 "  [bold #f1fa8c]x[/]          Export stats (.txt/.md)\n\n"
@@ -318,7 +322,8 @@ class HelpScreen(ModalScreen):
                 "  [bold #f1fa8c]?[/]          Show this help\n"
                 "  [bold #f1fa8c]q[/]          Quit\n\n"
                 "[dim]Press Escape or ? to close[/]\n\n"
-                "[dim]© Musaib Bin Bashir 2026[/]",
+                "[bold cyan]Contact Me[/]\n"
+                "  Email: [bold #8be9fd]musaibbashir02@gmail.com[/]",
                 markup=True,
             )
 
@@ -367,7 +372,7 @@ class LazyToolApp(App):
         Binding("v", "view_all_todos", "View All", show=False),
     ]
 
-    active_panel: reactive[int] = reactive(0)
+    active_panel: reactive[int] = reactive(-1)
 
     def __init__(self):
         super().__init__(css_path=self._get_css_path())
@@ -385,7 +390,7 @@ class LazyToolApp(App):
         with Horizontal(id="main-container"):
             # Left: panels 1-3
             with Vertical(id="left-panels"):
-                yield TodoPanel(self.dm, id="panel-todos", classes="panel panel-active")
+                yield TodoPanel(self.dm, id="panel-todos", classes="panel")
                 yield JournalPanel(self.dm, id="panel-journal", classes="panel")
                 yield MoodPanel(self.dm, id="panel-moods", classes="panel")
 
@@ -417,6 +422,46 @@ class LazyToolApp(App):
         if purged > 0:
             self._panels[0].refresh_list()
 
+    def _get_welcome_text(self) -> str:
+        """Return welcome + help content for the default centre pane."""
+        return (
+            "[bold #ff79c6]LazyTool - Be Less Lazy[/]\n"
+            "[dim]─────────────────────────────────────────[/]\n"
+            "[bold #8be9fd]Open a panel to display content[/]\n\n"
+            "[dim]© Musaib Bin Bashir 2026[/]\n\n"
+            "[bold cyan]Keyboard Shortcuts[/]\n"
+            "[dim]─────────────────────────────────────────[/]\n\n"
+            "[bold cyan]Navigation[/]\n"
+            "  [bold #f1fa8c]1 - 6[/]      Switch panels\n"
+            "  [bold #f1fa8c]↑ / k[/]      Move up in list\n"
+            "  [bold #f1fa8c]↓ / j[/]      Move down in list\n\n"
+            "[bold cyan]Actions[/]\n"
+            "  [bold #f1fa8c]a[/]          Add new item / start activity\n"
+            "  [bold #f1fa8c]e[/]          Edit selected item\n"
+            "  [bold #f1fa8c]d[/]          Delete selected item\n"
+            "  [bold #f1fa8c]space[/]      Toggle done / end activity\n"
+            "  [bold #f1fa8c]p[/]          Cycle priority (Todos only)\n"
+            "  [bold #f1fa8c]enter[/]      View / confirm\n\n"
+            "[bold cyan]Todos[/]\n"
+            "  [bold #f1fa8c]v[/]          View all todos (full list)\n"
+            "  [bold #f1fa8c]s[/]          Set auto-purge days\n\n"
+            "[bold cyan]Goals[/]\n"
+            "  [bold #f1fa8c]space[/]      Check in for today\n"
+            "  [bold #f1fa8c]s[/]          Set history window\n\n"
+            "[bold cyan]Timeline[/]\n"
+            "  [bold #f1fa8c]h[/]          Previous day\n"
+            "  [bold #f1fa8c]l[/]          Next day\n"
+            "  [bold #f1fa8c]e[/]          Edit event times\n\n"
+            "[bold cyan]Stats[/]\n"
+            "  [bold #f1fa8c]s[/]          Set tracking days\n"
+            "  [bold #f1fa8c]x[/]          Export stats (.txt/.md)\n\n"
+            "[bold cyan]General[/]\n"
+            "  [bold #f1fa8c]?[/]          Show this help\n"
+            "  [bold #f1fa8c]q[/]          Quit\n\n"
+            "[bold cyan]Contact Me[/]\n"
+            "  Email: [bold #8be9fd]musaibbashir02@gmail.com[/]"
+        )
+
     def _update_active_panel(self) -> None:
         """Highlight the active panel and show its detail."""
         for i, panel in enumerate(self._panels):
@@ -433,10 +478,19 @@ class LazyToolApp(App):
         self._update_detail()
         self._update_status_bar()
 
+    def _is_panel_active(self) -> bool:
+        """Return True if a valid panel is selected."""
+        return 0 <= self.active_panel < len(self._panels)
+
     def _update_detail(self) -> None:
         """Update the right-side detail pane with selected item info."""
-        panel = self._panels[self.active_panel]
         detail = self.query_one("#centre-detail", Static)
+
+        if not self._is_panel_active():
+            detail.update(self._get_welcome_text())
+            return
+
+        panel = self._panels[self.active_panel]
 
         panel_names = ["Todos", "Journal", "Moods", "Goals", "Timeline", "Stats"]
         panel_name = panel_names[self.active_panel]
@@ -465,7 +519,7 @@ class LazyToolApp(App):
             1: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]d[/]:del",
             2: "[bold #f1fa8c]a[/]:log mood [bold #f1fa8c]d[/]:del",
             3: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]space[/]:check-in [bold #f1fa8c]d[/]:del [bold #f1fa8c]s[/]:history",
-            4: "[bold #f1fa8c]a[/]:start [bold #f1fa8c]space[/]:end [bold #f1fa8c]h[/]:←day [bold #f1fa8c]l[/]:day→ [bold #f1fa8c]d[/]:del",
+            4: "[bold #f1fa8c]a[/]:start [bold #f1fa8c]e[/]:edit [bold #f1fa8c]space[/]:end [bold #f1fa8c]h[/]:←day [bold #f1fa8c]l[/]:day→ [bold #f1fa8c]d[/]:del",
             5: "[bold #f1fa8c]s[/]:set days [bold #f1fa8c]x[/]:export",
         }
 
@@ -491,11 +545,15 @@ class LazyToolApp(App):
     # ── Navigation ───────────────────────────────────────
 
     def action_move_up(self) -> None:
+        if not self._is_panel_active():
+            return
         panel = self._panels[self.active_panel]
         panel.move_up()
         self._update_detail()
 
     def action_move_down(self) -> None:
+        if not self._is_panel_active():
+            return
         panel = self._panels[self.active_panel]
         panel.move_down()
         self._update_detail()
@@ -623,6 +681,16 @@ class LazyToolApp(App):
                     InputModal("Edit Goal Title", default=goal["title"]),
                     callback=lambda v: self._on_edit_goal_title(goal["id"], v),
                 )
+        elif idx == 4:  # Timeline — edit event start/end time
+            ev = self._panels[4].get_selected()
+            if ev:
+                from lazytool.panels.timeline_panel import _fmt_time
+                current_start = _fmt_time(ev["start_time"])
+                self._editing_event = ev
+                self.push_screen(
+                    InputModal("Edit Start Time", placeholder="HH:MM", default=current_start),
+                    callback=self._on_edit_event_start,
+                )
 
     def _on_edit_todo(self, todo_id: str, value: str) -> None:
         if value and value != _CANCELLED:
@@ -641,6 +709,62 @@ class LazyToolApp(App):
             self.dm.edit_goal(goal_id, title=value)
             self._panels[3].refresh_list()
             self._update_detail()
+
+    def _on_edit_event_start(self, value: str) -> None:
+        if value == _CANCELLED or not value:
+            return
+        ev = getattr(self, "_editing_event", None)
+        if not ev:
+            return
+        # Validate HH:MM format
+        try:
+            parts = value.strip().split(":")
+            h, m = int(parts[0]), int(parts[1])
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                return
+        except (ValueError, IndexError):
+            return
+        # Build ISO datetime from the event's date + new time
+        event_date = ev.get("date", ev["start_time"][:10])
+        new_start = f"{event_date}T{h:02d}:{m:02d}:00"
+        self.dm.edit_event_time(ev["id"], start_time=new_start)
+        # Now ask for end time
+        if ev.get("end_time"):
+            from lazytool.panels.timeline_panel import _fmt_time
+            current_end = _fmt_time(ev["end_time"])
+            self.push_screen(
+                InputModal("Edit End Time", placeholder="HH:MM", default=current_end),
+                callback=self._on_edit_event_end,
+            )
+        else:
+            # Active event, no end time to edit
+            self._panels[4].refresh_list()
+            self._update_detail()
+
+    def _on_edit_event_end(self, value: str) -> None:
+        if value == _CANCELLED or not value:
+            self._panels[4].refresh_list()
+            self._update_detail()
+            return
+        ev = getattr(self, "_editing_event", None)
+        if not ev:
+            return
+        try:
+            parts = value.strip().split(":")
+            h, m = int(parts[0]), int(parts[1])
+            if not (0 <= h <= 23 and 0 <= m <= 59):
+                self._panels[4].refresh_list()
+                self._update_detail()
+                return
+        except (ValueError, IndexError):
+            self._panels[4].refresh_list()
+            self._update_detail()
+            return
+        event_date = ev.get("date", ev["start_time"][:10])
+        new_end = f"{event_date}T{h:02d}:{m:02d}:00"
+        self.dm.edit_event_time(ev["id"], end_time=new_end)
+        self._panels[4].refresh_list()
+        self._update_detail()
 
     # ── Delete item ──────────────────────────────────────
 

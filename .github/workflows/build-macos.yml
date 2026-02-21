@@ -39,7 +39,7 @@ jobs:
             --add-data "lazytool/app.tcss:lazytool" \
             --collect-all textual \
             --collect-all rich \
-            --icon app_icon.png \
+            --icon app_icon.icns \
             lazytool/__main__.py
 
       - name: Verify binary
