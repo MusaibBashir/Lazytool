@@ -45,33 +45,123 @@ jobs:
             --icon app_icon.icns \
             lazytool/__main__.py
 
-      - name: Verify binary
+      - name: Create macOS .app bundle
+        run: |
+          APP_NAME="LazyTool"
+          APP_DIR="dist/${APP_NAME}.app"
+          
+          # Create .app directory structure
+          mkdir -p "${APP_DIR}/Contents/MacOS"
+          mkdir -p "${APP_DIR}/Contents/Resources"
+          
+          # Copy the binary
+          cp dist/lazytool "${APP_DIR}/Contents/MacOS/lazytool"
+          
+          # Copy icon
+          cp app_icon.icns "${APP_DIR}/Contents/Resources/app_icon.icns"
+          
+          # Create the launcher script that opens Terminal with lazytool
+          cat > "${APP_DIR}/Contents/MacOS/LazyTool" << 'LAUNCHER'
+          #!/bin/bash
+          DIR="$(cd "$(dirname "$0")" && pwd)"
+          BINARY="${DIR}/lazytool"
+          
+          # Make sure binary is executable
+          chmod +x "${BINARY}"
+          
+          # Remove quarantine attribute if present
+          xattr -dr com.apple.quarantine "${BINARY}" 2>/dev/null || true
+          
+          # Open Terminal.app and run lazytool
+          osascript -e "
+            tell application \"Terminal\"
+              activate
+              do script \"'${BINARY}'; exit\"
+            end tell
+          "
+          LAUNCHER
+          chmod +x "${APP_DIR}/Contents/MacOS/LazyTool"
+          
+          # Create Info.plist
+          cat > "${APP_DIR}/Contents/Info.plist" << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key>
+            <string>LazyTool</string>
+            <key>CFBundleDisplayName</key>
+            <string>LazyTool</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.musaibbashir.lazytool</string>
+            <key>CFBundleVersion</key>
+            <string>1.0.0</string>
+            <key>CFBundleShortVersionString</key>
+            <string>1.0.0</string>
+            <key>CFBundleExecutable</key>
+            <string>LazyTool</string>
+            <key>CFBundleIconFile</key>
+            <string>app_icon</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>12.0</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Create DMG
+        run: |
+          # Create a folder for DMG contents
+          mkdir -p dmg_contents
+          cp -R "dist/LazyTool.app" dmg_contents/
+          
+          # Create a symlink to Applications for drag-and-drop install
+          ln -s /Applications dmg_contents/Applications
+          
+          # Create the DMG
+          hdiutil create -volname "LazyTool" \
+            -srcfolder dmg_contents \
+            -ov -format UDZO \
+            "dist/LazyTool-macOS.dmg"
+
+      - name: Verify outputs
         run: |
           ls -la dist/
-          file dist/lazytool
+          ls -la dist/LazyTool.app/Contents/MacOS/
 
-      - name: Upload artifact
+      - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: lazytool-macos
+          name: lazytool-macos-dmg
+          path: dist/LazyTool-macOS.dmg
+          retention-days: 30
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lazytool-macos-binary
           path: dist/lazytool
           retention-days: 30
 
-  # Optional: create a release when a tag is pushed
+  # Create a release when a tag is pushed
   release:
     needs: build-macos
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
-      - name: Download macOS build
+      - name: Download macOS builds
         uses: actions/download-artifact@v4
         with:
-          name: lazytool-macos
           path: dist/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/lazytool
+          files: |
+            dist/lazytool-macos-dmg/LazyTool-macOS.dmg
+            dist/lazytool-macos-binary/lazytool
           generate_release_notes: true
