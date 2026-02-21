@@ -160,8 +160,24 @@ jobs:
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           files: |
             dist/lazytool-macos-dmg/LazyTool-macOS.dmg
             dist/lazytool-macos-binary/lazytool
-          generate_release_notes: true
+          body: |
+            ## LazyTool for macOS
+
+            ### Easy Install (Recommended)
+            1. Download **LazyTool-macOS.dmg**
+            2. Open the DMG
+            3. Drag **LazyTool** to **Applications**
+            4. Double-click to launch!
+
+            ### CLI Install
+            Download the `lazytool` binary, then:
+            ```
+            chmod +x lazytool && sudo mv lazytool /usr/local/bin/
+            ```
+          make_latest: true
