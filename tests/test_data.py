@@ -470,6 +470,48 @@ class TestCrossMidnight:
         assert len(day3) == 0
 
 
+class TestDataSanitization:
+    """Tests for the automatic sanitization of broken legacy data."""
+
+    def test_sanitize_backwards_timestamps_on_load(self, tmp_path):
+        """Events where end_time < start_time should be bumped forward by 1 day on init."""
+        data_dir = tmp_path / ".lazytool"
+        data_file = data_dir / "data.json"
+        data_dir.mkdir()
+
+        # Write corrupted data directly to file before initializing DataManager
+        corrupted_data = {
+            "timeline": [
+                {
+                    "id": "1",
+                    "name": "Corrupted Event",
+                    "date": "2026-02-20",
+                    "start_time": "2026-02-20T23:00:00",
+                    # End time is chronologically BEFORE start time (the old bug)
+                    "end_time": "2026-02-20T01:00:00"
+                }
+            ],
+            "todos": [], "journal": [], "moods": [], "goals": [], "notes": [], "settings": {}
+        }
+        with open(data_file, "w") as f:
+            json.dump(corrupted_data, f)
+
+        # Loading the DataManager should automatically trigger _sanitize_data
+        with patch("lazytool.data.DATA_DIR", data_dir), \
+             patch("lazytool.data.DATA_FILE", data_file):
+            from lazytool.data import DataManager
+            dm = DataManager()
+            
+            ev = dm.timeline[0]
+            # Verify the start time is untouched
+            assert ev["start_time"] == "2026-02-20T23:00:00"
+            # Verify the end time was safely incremented by exactly 1 day
+            assert ev["end_time"] == "2026-02-21T01:00:00"
+
+            # Check that it calculates a positive, correct duration now (2 hours = 120 mins)
+            assert dm.get_event_duration_minutes(ev) == 120.0
+
+
 # ═══════════════════════════════════════════════════════════
 # SETTINGS
 # ═══════════════════════════════════════════════════════════
@@ -479,6 +521,7 @@ class TestSettings:
         assert dm.settings.get("stats_days") == 7
         assert dm.settings.get("todo_purge_days") == 7
         assert dm.settings.get("goal_history_days") == 30
+        assert dm.settings.get("stats_bar_mode") == 3  # Default should be Min/Max (3)
 
     def test_update_setting(self, dm):
         dm.update_setting("stats_days", 14)
