@@ -123,7 +123,7 @@ class GoalsPanel(VerticalScroll):
             parts.append(f"  [bold]Today:[/]   [yellow]○ Not yet[/]  — press [bold cyan]space[/] to check in")
 
         parts.append(f"  [bold]Total:[/]   {total_check_ins} check-ins")
-        parts.append(f"  [bold]Created:[/] [dim]{goal.get('created_at', '')[0:10]}[/]\n")
+        parts.append(f"  [bold]Created:[/] [dim]{self.data_manager.fmt_date(goal.get('created_at', ''))}[/]\n")
 
         # History grid — bigger, symmetric
         parts.append(f"[bold cyan]Last {history_days} Days[/]")

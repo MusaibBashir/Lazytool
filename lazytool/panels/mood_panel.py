@@ -71,7 +71,7 @@ class MoodPanel(VerticalScroll):
             if i == self.selected_index:
                 classes += " list-item-selected"
 
-            line = f"[dim]{day}[/] {emoji} [{color}]{label}[/]{count_text}"
+            line = f"[dim]{self.data_manager.fmt_date(day)}[/] {emoji} [{color}]{label}[/]{count_text}"
             yield Static(line, classes=classes, markup=True)
 
     def refresh_list(self):
@@ -114,7 +114,7 @@ class MoodPanel(VerticalScroll):
         day, moods = groups[self.selected_index]
 
         parts = [
-            f"[bold cyan]Moods — {day}[/]",
+            f"[bold cyan]Moods — {self.data_manager.fmt_date(day)}[/]",
             f"[dim]─────────────────────────────────[/]\n",
         ]
 
@@ -122,16 +122,16 @@ class MoodPanel(VerticalScroll):
             emoji, color, label = MOOD_DISPLAY.get(
                 mood["mood"], ("❓", "#f8f8f2", mood["mood"])
             )
-            time_str = mood.get("created_at", "")
-            # Extract just the time portion (HH:MM:SS)
-            if "T" in time_str:
-                time_str = time_str.split("T")[1]
+            time_str = self.data_manager.fmt_time(mood.get("created_at", ""))
+            # Extract just the time portion (HH:MM:SS) if it full timestamp
+            if " " in time_str:
+                time_str = time_str.split(" ")[1]
             note_text = f"  [dim]{mood['note']}[/]" if mood.get("note") else ""
             parts.append(
                 f"  {emoji}  [{color}][bold]{label}[/bold][/]  [dim]{time_str}[/]{note_text}"
             )
 
-        parts.append(f"\n[dim]{len(moods)} mood(s) logged on {day}[/]")
+        parts.append(f"\n[dim]{len(moods)} mood(s) logged on {self.data_manager.fmt_date(day)}[/]")
         return "\n".join(parts)
 
     def get_counter_text(self) -> str:

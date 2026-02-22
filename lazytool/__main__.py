@@ -11,7 +11,7 @@ def main():
             import ctypes
             # Separate taskbar group from terminal
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "musaib.lazytool.app.1.2"
+                "musaib.lazytool.app.2.0"
             )
             # Set the console window icon
             try:

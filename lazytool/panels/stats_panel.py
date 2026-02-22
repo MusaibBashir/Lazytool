@@ -209,7 +209,7 @@ class StatsPanel(VerticalScroll):
 
         lines = [
             f"LazyTool — Productivity Stats ({days}-day window)",
-            f"Generated: {date.today().isoformat()}",
+            f"Generated: {self.data_manager.fmt_date(date.today().isoformat())}",
             "=" * 50,
             "",
             "TASKS",
@@ -256,7 +256,7 @@ class StatsPanel(VerticalScroll):
 
         lines = [
             f"# LazyTool — Productivity Stats ({days}-day window)",
-            f"*Generated: {date.today().isoformat()}*",
+            f"*Generated: {self.data_manager.fmt_date(date.today().isoformat())}*",
             "",
             "## Tasks",
             f"| Metric | Value |",
@@ -300,13 +300,14 @@ class StatsPanel(VerticalScroll):
         """Export stats to a file and return the file path."""
         EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
         today = date.today().isoformat()
+        today_fmt = self.data_manager.fmt_date(today)
 
         if fmt == "md":
             content = self.export_stats_markdown()
-            filename = f"stats_{today}.md"
+            filename = f"stats_{today_fmt}.md"
         else:
             content = self.export_stats_text()
-            filename = f"stats_{today}.txt"
+            filename = f"stats_{today_fmt}.txt"
 
         filepath = EXPORTS_DIR / filename
         with open(filepath, "w", encoding="utf-8") as f:

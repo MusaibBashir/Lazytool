@@ -58,6 +58,27 @@ class DataManager:
     def _today(self) -> str:
         return date.today().isoformat()
 
+    def fmt_date(self, iso_str: str) -> str:
+        """Convert YYYY-MM-DD to DD-MM-YYYY."""
+        if not iso_str or len(iso_str) < 10:
+            return iso_str
+        try:
+            # Handle both date-only and full ISO strings
+            d = date.fromisoformat(iso_str[:10])
+            return d.strftime("%d-%m-%Y")
+        except ValueError:
+            return iso_str
+
+    def fmt_time(self, iso_str: str) -> str:
+        """Convert ISO timestamp to DD-MM-YYYY HH:MM:SS."""
+        if not iso_str:
+            return iso_str
+        try:
+            dt = datetime.fromisoformat(iso_str)
+            return dt.strftime("%d-%m-%Y %H:%M:%S")
+        except ValueError:
+            return self.fmt_date(iso_str)  # Fallback to date only if full time fails
+
     # ── Todos ─────────────────────────────────────────────
     @property
     def todos(self) -> list[dict]:
@@ -346,11 +367,42 @@ class DataManager:
         self._save()
 
     def get_events_for_date(self, target_date: str) -> list[dict]:
-        """Get all events for a specific date string (YYYY-MM-DD)."""
-        return [
-            ev for ev in self.timeline
-            if ev.get("date") == target_date
-        ]
+        """Get all events that overlap a specific date (YYYY-MM-DD).
+
+        For events that cross midnight, returns a copy with extra keys:
+          _day_start  – clamped start ISO string for this day
+          _day_end    – clamped end ISO string for this day
+          _is_spillover – True if the event did not originate on this day
+        """
+        target = date.fromisoformat(target_date)
+        day_start_dt = datetime(target.year, target.month, target.day, 0, 0, 0)
+        day_end_dt = datetime(target.year, target.month, target.day, 23, 59, 59)
+
+        results: list[dict] = []
+        for ev in self.timeline:
+            try:
+                ev_start = datetime.fromisoformat(ev["start_time"])
+                ev_end = datetime.fromisoformat(ev["end_time"]) if ev.get("end_time") else datetime.now()
+            except (ValueError, TypeError):
+                continue
+
+            # Check if event overlaps this day at all
+            if ev_end <= day_start_dt or ev_start > day_end_dt:
+                continue  # no overlap
+
+            # Clamp to this day's boundaries
+            clamped_start = max(ev_start, day_start_dt)
+            clamped_end = min(ev_end, day_end_dt + timedelta(seconds=1))  # inclusive end
+
+            is_spillover = ev.get("date", "") != target_date
+
+            entry = dict(ev)  # shallow copy
+            entry["_day_start"] = clamped_start.isoformat(timespec="seconds")
+            entry["_day_end"] = clamped_end.isoformat(timespec="seconds")
+            entry["_is_spillover"] = is_spillover
+            results.append(entry)
+
+        return results
 
     def get_events_for_range(self, days: int = 7) -> dict[str, list[dict]]:
         """Get events grouped by date for the last N days."""
@@ -361,13 +413,21 @@ class DataManager:
         return result
 
     def get_event_duration_minutes(self, event: dict) -> float:
-        """Calculate duration of an event in minutes."""
+        """Calculate total duration of an event in minutes (full span)."""
         start = datetime.fromisoformat(event["start_time"])
         if event.get("end_time"):
             end = datetime.fromisoformat(event["end_time"])
         else:
             end = datetime.now()
         return (end - start).total_seconds() / 60.0
+
+    def get_event_day_duration_minutes(self, event: dict) -> float:
+        """Calculate per-day duration using clamped _day_start/_day_end."""
+        if "_day_start" in event and "_day_end" in event:
+            start = datetime.fromisoformat(event["_day_start"])
+            end = datetime.fromisoformat(event["_day_end"])
+            return (end - start).total_seconds() / 60.0
+        return self.get_event_duration_minutes(event)
 
     def delete_event(self, event_id: str):
         self._data["timeline"] = [

@@ -373,6 +373,106 @@ class TestTimeline:
         assert duration == 30.0
 
 
+class TestCrossMidnight:
+    """Tests for events that span midnight boundaries."""
+
+    def test_event_appears_on_both_days(self, dm):
+        """An event from 22:00 day X to 03:00 day X+1 should appear on both days."""
+        ev = dm.start_event("Night work")
+        ev["date"] = "2026-02-20"
+        ev["start_time"] = "2026-02-20T22:00:00"
+        ev["end_time"] = "2026-02-21T03:00:00"
+
+        day1 = dm.get_events_for_date("2026-02-20")
+        day2 = dm.get_events_for_date("2026-02-21")
+
+        assert len(day1) == 1, "Event should appear on start day"
+        assert len(day2) == 1, "Event should spill over to next day"
+        assert day1[0]["id"] == ev["id"]
+        assert day2[0]["id"] == ev["id"]
+
+    def test_clamped_times_day1(self, dm):
+        """Day 1 should show 22:00–00:00:00 (midnight)."""
+        ev = dm.start_event("Night work")
+        ev["date"] = "2026-02-20"
+        ev["start_time"] = "2026-02-20T22:00:00"
+        ev["end_time"] = "2026-02-21T03:00:00"
+
+        day1 = dm.get_events_for_date("2026-02-20")
+        assert day1[0]["_day_start"] == "2026-02-20T22:00:00"
+        # End should be clamped to midnight (end of day)
+        clamped_end = datetime.fromisoformat(day1[0]["_day_end"])
+        assert clamped_end.hour == 0 and clamped_end.day == 21
+
+    def test_clamped_times_day2(self, dm):
+        """Day 2 should show 00:00–03:00."""
+        ev = dm.start_event("Night work")
+        ev["date"] = "2026-02-20"
+        ev["start_time"] = "2026-02-20T22:00:00"
+        ev["end_time"] = "2026-02-21T03:00:00"
+
+        day2 = dm.get_events_for_date("2026-02-21")
+        assert day2[0]["_day_start"] == "2026-02-21T00:00:00"
+        assert day2[0]["_day_end"] == "2026-02-21T03:00:00"
+
+    def test_spillover_flag(self, dm):
+        """The _is_spillover flag should be True on the next day, False on the start day."""
+        ev = dm.start_event("Night work")
+        ev["date"] = "2026-02-20"
+        ev["start_time"] = "2026-02-20T22:00:00"
+        ev["end_time"] = "2026-02-21T03:00:00"
+
+        day1 = dm.get_events_for_date("2026-02-20")
+        day2 = dm.get_events_for_date("2026-02-21")
+
+        assert day1[0]["_is_spillover"] is False
+        assert day2[0]["_is_spillover"] is True
+
+    def test_per_day_duration(self, dm):
+        """Per-day duration should be clamped, total duration should be full span."""
+        ev = dm.start_event("Night work")
+        ev["date"] = "2026-02-20"
+        ev["start_time"] = "2026-02-20T22:00:00"
+        ev["end_time"] = "2026-02-21T03:00:00"
+
+        # Total duration = 5 hours = 300 minutes
+        assert dm.get_event_duration_minutes(ev) == 300.0
+
+        day1 = dm.get_events_for_date("2026-02-20")
+        day2 = dm.get_events_for_date("2026-02-21")
+
+        # Day 1: 22:00 to ~00:00 = ~2 hours
+        d1_mins = dm.get_event_day_duration_minutes(day1[0])
+        assert 119 <= d1_mins <= 121  # ~120 minutes (midnight boundary)
+
+        # Day 2: 00:00 to 03:00 = 3 hours
+        d2_mins = dm.get_event_day_duration_minutes(day2[0])
+        assert d2_mins == 180.0
+
+    def test_same_day_event_unaffected(self, dm):
+        """A normal same-day event should work exactly as before."""
+        ev = dm.start_event("Morning run")
+        ev["date"] = "2026-02-20"
+        ev["start_time"] = "2026-02-20T08:00:00"
+        ev["end_time"] = "2026-02-20T09:00:00"
+
+        events = dm.get_events_for_date("2026-02-20")
+        assert len(events) == 1
+        assert events[0]["_is_spillover"] is False
+        assert events[0]["_day_start"] == "2026-02-20T08:00:00"
+        assert events[0]["_day_end"] == "2026-02-20T09:00:00"
+
+    def test_event_does_not_appear_on_unrelated_day(self, dm):
+        """An event should not appear on a day it doesn't overlap."""
+        ev = dm.start_event("Night work")
+        ev["date"] = "2026-02-20"
+        ev["start_time"] = "2026-02-20T22:00:00"
+        ev["end_time"] = "2026-02-21T03:00:00"
+
+        day3 = dm.get_events_for_date("2026-02-22")
+        assert len(day3) == 0
+
+
 # ═══════════════════════════════════════════════════════════
 # SETTINGS
 # ═══════════════════════════════════════════════════════════

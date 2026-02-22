@@ -1,0 +1,465 @@
+{
+  "todos": [
+    {
+      "id": "1eff5fa7",
+      "text": "EPQ with safety stock",
+      "done": true,
+      "priority": "high",
+      "created_at": "2026-02-19T20:02:51"
+    },
+    {
+      "id": "0a1d1e99",
+      "text": "EPQ derivation",
+      "done": true,
+      "priority": "high",
+      "created_at": "2026-02-19T20:02:58"
+    },
+    {
+      "id": "0a71f19e",
+      "text": "ask doubt about total ordering cost in safety stock, Slide 104",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-19T20:09:57"
+    },
+    {
+      "id": "aa972576",
+      "text": "EOQ under planned Shortage",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-19T20:13:02"
+    },
+    {
+      "id": "08df91c6",
+      "text": "Atrangi cases",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-19T23:00:06"
+    },
+    {
+      "id": "d442f4da",
+      "text": "read book",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-19T23:04:47",
+      "done_at": "2026-02-20T12:21:19"
+    },
+    {
+      "id": "233ff289",
+      "text": "Sehri",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-20T05:44:17",
+      "done_at": "2026-02-20T05:44:20"
+    },
+    {
+      "id": "8de3b3d3",
+      "text": "Create Theorem Sheet",
+      "done": true,
+      "priority": "high",
+      "created_at": "2026-02-20T12:21:34",
+      "done_at": "2026-02-20T15:31:01"
+    },
+    {
+      "id": "89d0fcd8",
+      "text": "Create Assignment solutions booklet",
+      "done": true,
+      "priority": "high",
+      "created_at": "2026-02-20T15:31:17",
+      "done_at": "2026-02-20T15:53:43"
+    },
+    {
+      "id": "5660536a",
+      "text": "submission",
+      "done": true,
+      "priority": "high",
+      "created_at": "2026-02-20T16:30:21",
+      "done_at": "2026-02-20T21:44:39"
+    },
+    {
+      "id": "75475c0d",
+      "text": "Derive order statistics",
+      "done": true,
+      "priority": "high",
+      "created_at": "2026-02-20T21:44:59",
+      "done_at": "2026-02-21T14:21:21"
+    },
+    {
+      "id": "30a7420f",
+      "text": "derive sum",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-20T21:45:06",
+      "done_at": "2026-02-21T14:21:23"
+    },
+    {
+      "id": "8e25f599",
+      "text": "see the transformation proof",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-20T21:45:23",
+      "done_at": "2026-02-21T14:21:25"
+    },
+    {
+      "id": "62033aec",
+      "text": "finish assignment reading",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-20T21:53:59",
+      "done_at": "2026-02-21T14:21:26"
+    },
+    {
+      "id": "b60c567a",
+      "text": "Read Estimation Theorems",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-20T23:24:43",
+      "done_at": "2026-02-21T14:21:28"
+    },
+    {
+      "id": "d82a80fc",
+      "text": "do pyq1",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-21T10:55:27",
+      "done_at": "2026-02-21T10:55:34"
+    },
+    {
+      "id": "0da14850",
+      "text": "Slide 1,2 ratt lo",
+      "done": true,
+      "priority": "medium",
+      "created_at": "2026-02-21T23:22:56",
+      "done_at": "2026-02-22T05:51:03"
+    },
+    {
+      "id": "a8830e5a",
+      "text": "slide 3 ratt lo",
+      "done": false,
+      "priority": "high",
+      "created_at": "2026-02-21T23:23:03",
+      "done_at": null
+    },
+    {
+      "id": "720c1f4f",
+      "text": "slide 4 ratt lo",
+      "done": false,
+      "priority": "medium",
+      "created_at": "2026-02-21T23:23:15",
+      "done_at": null
+    }
+  ],
+  "journal": [
+    {
+      "id": "828e8d52",
+      "content": "First Iftar of this year done nicely, probably ate a bit too much",
+      "date": "2026-02-19",
+      "created_at": "2026-02-19T19:15:09"
+    },
+    {
+      "id": "515c702a",
+      "content": "Sutta kam hogaya hai lagta hai",
+      "date": "2026-02-19",
+      "created_at": "2026-02-19T21:58:23"
+    },
+    {
+      "id": "87e538e4",
+      "content": "abhishek sharma gave me trust issues",
+      "date": "2026-02-19",
+      "created_at": "2026-02-19T23:56:57"
+    },
+    {
+      "id": "2b19e0f2",
+      "content": "neend ki maa chud chuki hai guys",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T06:11:45"
+    },
+    {
+      "id": "ffc2d986",
+      "content": "MOIS paper gave me trauma, wtf was that integration, and double constraint kyun hit nahi kara, fuck abhishek sharam no seriously kya maza aata hai isko hume rulane mai",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T12:23:01"
+    },
+    {
+      "id": "4c2f0a20",
+      "content": "Exams ruin the beauty of math",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T23:25:20"
+    },
+    {
+      "id": "f55f25ae",
+      "content": "Feeling excited about MOIS paper, but ngl nervous too",
+      "date": "2026-02-21",
+      "created_at": "2026-02-21T14:21:53"
+    }
+  ],
+  "moods": [
+    {
+      "id": "7277a604",
+      "mood": "good",
+      "note": "",
+      "date": "2026-02-19",
+      "created_at": "2026-02-19T19:15:16"
+    },
+    {
+      "id": "32833fe6",
+      "mood": "great",
+      "note": "",
+      "date": "2026-02-19",
+      "created_at": "2026-02-19T20:10:45"
+    },
+    {
+      "id": "2a2d7ece",
+      "mood": "okay",
+      "note": "",
+      "date": "2026-02-19",
+      "created_at": "2026-02-19T21:58:08"
+    },
+    {
+      "id": "2167d4ad",
+      "mood": "amazing",
+      "note": "",
+      "date": "2026-02-19",
+      "created_at": "2026-02-19T23:00:59"
+    },
+    {
+      "id": "2bf479b1",
+      "mood": "amazing",
+      "note": "",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T01:09:29"
+    },
+    {
+      "id": "14b7cc06",
+      "mood": "terrible",
+      "note": "",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T06:11:56"
+    },
+    {
+      "id": "84c2b52d",
+      "mood": "terrible",
+      "note": "",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T12:23:11"
+    },
+    {
+      "id": "ec8fc2a4",
+      "mood": "amazing",
+      "note": "",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T15:53:48"
+    },
+    {
+      "id": "5df43859",
+      "mood": "good",
+      "note": "",
+      "date": "2026-02-20",
+      "created_at": "2026-02-20T23:24:17"
+    },
+    {
+      "id": "4e7b48c6",
+      "mood": "amazing",
+      "note": "",
+      "date": "2026-02-21",
+      "created_at": "2026-02-21T10:56:13"
+    },
+    {
+      "id": "2572776a",
+      "mood": "great",
+      "note": "",
+      "date": "2026-02-21",
+      "created_at": "2026-02-21T14:22:02"
+    },
+    {
+      "id": "4014adf0",
+      "mood": "good",
+      "note": "",
+      "date": "2026-02-22",
+      "created_at": "2026-02-22T06:01:22"
+    }
+  ],
+  "habits": [],
+  "notes": [
+    {
+      "id": "1ddc0aab",
+      "title": "",
+      "content": "",
+      "created_at": "2026-02-20T00:57:33"
+    }
+  ],
+  "timeline": [
+    {
+      "id": "0c316cbc",
+      "name": "Studying MOIS",
+      "date": "2026-02-19",
+      "start_time": "2026-02-19T19:13:51",
+      "end_time": "2026-02-19T20:36:43"
+    },
+    {
+      "id": "d011efbe",
+      "name": "Dinner and Break",
+      "date": "2026-02-19",
+      "start_time": "2026-02-19T20:42:44",
+      "end_time": "2026-02-19T21:56:23"
+    },
+    {
+      "id": "18a519e8",
+      "name": "Studying MOIS",
+      "date": "2026-02-19",
+      "start_time": "2026-02-19T21:57:40",
+      "end_time": "2026-02-19T23:57:32"
+    },
+    {
+      "id": "ae36cd24",
+      "name": "Revising MOIS",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T05:05:10",
+      "end_time": "2026-02-20T06:30:09"
+    },
+    {
+      "id": "lm37cd25",
+      "name": "Exam",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T08:30:19",
+      "end_time": "2026-02-20T11:38:09"
+    },
+    {
+      "id": "fe37ce59",
+      "name": "Namaz",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T12:25:13",
+      "end_time": "2026-02-20T14:20:09"
+    },
+    {
+      "id": "375d9bdc",
+      "name": "Studying SI",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T14:20:27",
+      "end_time": "2026-02-20T15:30:31"
+    },
+    {
+      "id": "d056fb37",
+      "name": "Soving SI assignment",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T15:30:55",
+      "end_time": "2026-02-20T16:29:31"
+    },
+    {
+      "id": "836c3e13",
+      "name": "assignment submission",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T16:30:00",
+      "end_time": "2026-02-20T17:25:37"
+    },
+    {
+      "id": "335e564b",
+      "name": "iftaar",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T17:30:55",
+      "end_time": "2026-02-20T19:15:22"
+    },
+    {
+      "id": "325e564c",
+      "name": "sleep",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T19:15:30",
+      "end_time": "2026-02-20T21:44:22"
+    },
+    {
+      "id": "130677da",
+      "name": "Studying SI",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T21:44:31",
+      "end_time": "2026-02-20T22:15:09"
+    },
+    {
+      "id": "07805c92",
+      "name": "Namaz",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T22:15:14",
+      "end_time": "2026-02-20T22:26:16"
+    },
+    {
+      "id": "7520c74c",
+      "name": "dinner",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T22:26:26",
+      "end_time": "2026-02-20T23:23:38"
+    },
+    {
+      "id": "3efd630f",
+      "name": "Studying SI",
+      "date": "2026-02-20",
+      "start_time": "2026-02-20T23:24:04",
+      "end_time": "2026-02-21T00:56:45"
+    },
+    {
+      "id": "e5dc2860",
+      "name": "Studying SI",
+      "date": "2026-02-21",
+      "start_time": "2026-02-21T10:55:40",
+      "end_time": "2026-02-21T14:18:53"
+    },
+    {
+      "id": "e4ba5e1f",
+      "name": "Exam",
+      "date": "2026-02-21",
+      "start_time": "2026-02-21T14:19:00",
+      "end_time": "2026-02-21T20:01:34"
+    },
+    {
+      "id": "eb0a0d16",
+      "name": "Dinner",
+      "date": "2026-02-21",
+      "start_time": "2026-02-21T20:01:43",
+      "end_time": "2026-02-21T23:05:58"
+    },
+    {
+      "id": "643a5f2e",
+      "name": "Finalising LazyTool Release",
+      "date": "2026-02-21",
+      "start_time": "2026-02-21T23:06:23",
+      "end_time": "2026-02-21T23:23:24"
+    },
+    {
+      "id": "cbb9639a",
+      "name": "Studying ILD",
+      "date": "2026-02-21",
+      "start_time": "2026-02-21T23:23:00",
+      "end_time": "2026-02-22T02:30:00"
+    },
+    {
+      "id": "5d244c8b",
+      "name": "Sehri",
+      "date": "2026-02-22",
+      "start_time": "2026-02-22T04:00:00",
+      "end_time": "2026-02-22T05:20:00"
+    },
+    {
+      "id": "a49effb1",
+      "name": "Studying ILD",
+      "date": "2026-02-22",
+      "start_time": "2026-02-22T05:30:00",
+      "end_time": null
+    }
+  ],
+  "settings": {
+    "stats_days": 7,
+    "todo_purge_days": 7,
+    "goal_history_days": 30
+  },
+  "goals": [
+    {
+      "id": "d869f450",
+      "title": "Fasting",
+      "description": "Ramadhan",
+      "check_ins": [
+        "2026-02-19",
+        "2026-02-20",
+        "2026-02-21",
+        "2026-02-22"
+      ],
+      "created_at": "2026-02-19T05:44:48"
+    }
+  ]
+}

@@ -35,7 +35,7 @@ class JournalPanel(VerticalScroll):
             if i == self.selected_index:
                 classes += " list-item-selected"
 
-            line = f"[dim]{entry['date']}[/] {preview}"
+            line = f"[dim]{self.data_manager.fmt_date(entry['date'])}[/] {preview}"
             yield Static(line, classes=classes, markup=True)
 
     def refresh_list(self):
@@ -69,10 +69,10 @@ class JournalPanel(VerticalScroll):
         if not entry:
             return "No journal entries.\n\nPress [bold cyan]a[/] to write a new entry."
         return (
-            f"[bold cyan]Journal Entry — {entry['date']}[/]\n"
+            f"[bold cyan]Journal Entry — {self.data_manager.fmt_date(entry['date'])}[/]\n"
             f"[dim]─────────────────────────────────[/]\n\n"
             f"{entry['content']}\n\n"
-            f"[dim]Created: {entry['created_at']}[/]"
+            f"[dim]Created: {self.data_manager.fmt_time(entry['created_at'])}[/]"
         )
 
     def get_counter_text(self) -> str:

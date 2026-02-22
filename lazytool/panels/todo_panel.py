@@ -103,7 +103,7 @@ class TodoPanel(VerticalScroll):
             for i, t in enumerate(pending, 1):
                 pri = t.get("priority", "medium")
                 pri_color = PRIORITY_COLORS.get(pri, "white")
-                created = t.get("created_at", "")[0:10]  # date only
+                created = self.data_manager.fmt_date(t.get("created_at", ""))
                 parts.append(
                     f"  {i:>2}. [{pri_color}]{pri[0].upper()}[/]  {t['text']}"
                     f"  [dim]{created}[/]"
@@ -116,7 +116,7 @@ class TodoPanel(VerticalScroll):
             for t in done:
                 pri = t.get("priority", "medium")
                 pri_color = PRIORITY_COLORS.get(pri, "white")
-                done_at = t.get("done_at", t.get("created_at", ""))[0:10]
+                done_at = self.data_manager.fmt_date(t.get("done_at", t.get("created_at", "")))
                 parts.append(
                     f"  [dim]✓[/]  [{pri_color}]{pri[0].upper()}[/]  "
                     f"[dim]{t['text']}[/]  [dim]{done_at}[/]"

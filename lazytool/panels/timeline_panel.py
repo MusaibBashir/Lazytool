@@ -62,13 +62,14 @@ class TimelinePanel(VerticalScroll):
 
     def _build_items(self):
         """Build sidebar — shows only current or last activity."""
-        viewed = self._viewed_date()
+        viewed_iso = self._viewed_date()
+        viewed_fmt = self.data_manager.fmt_date(viewed_iso)
         day_label = "Today" if self.view_day_offset == 0 else (
-            "Yesterday" if self.view_day_offset == 1 else viewed
+            "Yesterday" if self.view_day_offset == 1 else viewed_fmt
         )
 
         yield Static(
-            f"[bold cyan]{day_label}[/]  [dim]({viewed})[/]  "
+            f"[bold cyan]{day_label}[/]  [dim]({viewed_fmt})[/]  "
             f"[dim]<< h  l >>[/]",
             markup=True,
         )
@@ -83,7 +84,7 @@ class TimelinePanel(VerticalScroll):
             )
         else:
             # Show last completed activity for the viewed day
-            events = self.data_manager.get_events_for_date(viewed)
+            events = self.data_manager.get_events_for_date(viewed_iso)
             if events:
                 last = events[-1]
                 dur = _fmt_duration(self.data_manager.get_event_duration_minutes(last))
@@ -114,9 +115,11 @@ class TimelinePanel(VerticalScroll):
 
         for idx, ev in enumerate(events):
             try:
-                start = datetime.fromisoformat(ev["start_time"])
-                if ev.get("end_time"):
-                    end = datetime.fromisoformat(ev["end_time"])
+                # Use clamped day times for bar positioning
+                start = datetime.fromisoformat(ev.get("_day_start", ev["start_time"]))
+                end_str = ev.get("_day_end", ev.get("end_time"))
+                if end_str:
+                    end = datetime.fromisoformat(end_str)
                 else:
                     end = datetime.now()
 
@@ -172,15 +175,16 @@ class TimelinePanel(VerticalScroll):
     # ── Detail text (centre pane) ────────────────────────
 
     def get_detail_text(self) -> str:
-        viewed = self._viewed_date()
+        viewed_iso = self._viewed_date()
+        viewed_fmt = self.data_manager.fmt_date(viewed_iso)
         day_label = "Today" if self.view_day_offset == 0 else (
-            "Yesterday" if self.view_day_offset == 1 else viewed
+            "Yesterday" if self.view_day_offset == 1 else viewed_fmt
         )
         active = self.data_manager.get_active_event()
-        events = self.data_manager.get_events_for_date(viewed)
+        events = self.data_manager.get_events_for_date(viewed_iso)
 
         parts = [
-            f"[bold cyan]Timeline — {day_label}[/]  [dim]({viewed})[/]",
+            f"[bold cyan]Timeline — {day_label}[/]  [dim]({viewed_fmt})[/]",
             "[dim]─────────────────────────────────[/]\n",
         ]
 
@@ -207,21 +211,33 @@ class TimelinePanel(VerticalScroll):
 
         # Full event list with selection highlight
         for i, ev in enumerate(events):
-            start = _fmt_time(ev["start_time"])
-            end = _fmt_time(ev["end_time"]) if ev.get("end_time") else "now"
-            dur = _fmt_duration(self.data_manager.get_event_duration_minutes(ev))
+            # Use clamped day times for display
+            day_start = ev.get("_day_start", ev["start_time"])
+            day_end_str = ev.get("_day_end", ev.get("end_time"))
+            start_display = _fmt_time(day_start)
+            end_display = _fmt_time(day_end_str) if day_end_str else "now"
+
+            day_dur = _fmt_duration(self.data_manager.get_event_day_duration_minutes(ev))
             color = _color_for(i)
             is_active = ev.get("end_time") is None
+            is_spillover = ev.get("_is_spillover", False)
             status = " [yellow]▶[/]" if is_active else ""
+            spill = " [dim cyan]↩[/]" if is_spillover else ""
+
+            # Show total duration in parentheses for spillover/active events
+            total_dur = ""
+            if is_spillover or is_active:
+                total_mins = self.data_manager.get_event_duration_minutes(ev)
+                total_dur = f"  [dim](total {_fmt_duration(total_mins)})[/]"
 
             marker = "→" if i == self.selected_index else " "
             parts.append(
-                f"  {marker} [{color}]■[/] {start} - {end}  {ev['name']}  [bold]{dur}[/]{status}"
+                f"  {marker} [{color}]■[/] {start_display} - {end_display}  {ev['name']}  [bold]{day_dur}[/]{total_dur}{status}{spill}"
             )
 
-        # Summary
-        total_mins = sum(self.data_manager.get_event_duration_minutes(ev) for ev in events)
-        parts.append(f"\n[dim]Total: {_fmt_duration(total_mins)} across {len(events)} activities[/]")
+        # Summary — use per-day durations for the total
+        total_day_mins = sum(self.data_manager.get_event_day_duration_minutes(ev) for ev in events)
+        parts.append(f"\n[dim]Total: {_fmt_duration(total_day_mins)} across {len(events)} activities[/]")
 
         return "\n".join(parts)
 
