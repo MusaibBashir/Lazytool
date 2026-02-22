@@ -515,7 +515,7 @@ class LazyToolApp(App):
 
         # Context-sensitive actions
         actions = {
-            0: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]d[/]:del [bold #f1fa8c]space[/]:toggle [bold #f1fa8c]p[/]:priority [bold #f1fa8c]v[/]:all [bold #f1fa8c]s[/]:purge",
+            0: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]d[/]:del [bold #f1fa8c]space[/]:toggle [bold #f1fa8c]p[/]:priority [bold #f1fa8c]s[/]:purge",
             1: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]d[/]:del",
             2: "[bold #f1fa8c]a[/]:log mood [bold #f1fa8c]d[/]:del",
             3: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]space[/]:check-in [bold #f1fa8c]d[/]:del [bold #f1fa8c]s[/]:history",

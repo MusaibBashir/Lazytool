@@ -79,18 +79,7 @@ class TodoPanel(VerticalScroll):
     # ── Detail (single selected item) ────────────────────
 
     def get_detail_text(self) -> str:
-        todo = self.get_selected()
-        if not todo:
-            return "No todo selected.\n\nPress [bold cyan]a[/] to add a new todo."
-        status = "[green]✓ Done[/]" if todo["done"] else "[yellow]○ Pending[/]"
-        pri = todo.get("priority", "medium")
-        pri_color = PRIORITY_COLORS.get(pri, "white")
-        return (
-            f"[bold]{todo['text']}[/]\n\n"
-            f"  Status:    {status}\n"
-            f"  Priority:  [{pri_color}]{pri.title()}[/]\n"
-            f"  Created:   [dim]{todo['created_at']}[/]\n"
-        )
+        return self.get_all_todos_text()
 
     # ── Full list (all todos with status, priority, created) ──
 
