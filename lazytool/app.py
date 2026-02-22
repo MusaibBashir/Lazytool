@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from textual.app import App, ComposeResult
@@ -368,6 +369,7 @@ class LazyToolApp(App):
         Binding("h", "prev_day", "Prev day", show=False),
         Binding("l", "next_day", "Next day", show=False),
         Binding("s", "change_settings", "Settings", show=False),
+        Binding("t", "toggle_stats_denom", "Toggle %", show=False),
         Binding("x", "export_stats", "Export", show=False),
         Binding("v", "view_all_todos", "View All", show=False),
     ]
@@ -464,6 +466,11 @@ class LazyToolApp(App):
 
     def _update_active_panel(self) -> None:
         """Highlight the active panel and show its detail."""
+        # Clear focused widget so the App can reliably catch navigation keys (up/down)
+        # instead of them being trapped by the VerticalScroll native bindings of any panel.
+        if self.screen is not None:
+            self.screen.set_focus(None)
+
         for i, panel in enumerate(self._panels):
             if i == self.active_panel:
                 panel.add_class("panel-active")
@@ -520,7 +527,7 @@ class LazyToolApp(App):
             2: "[bold #f1fa8c]a[/]:log mood [bold #f1fa8c]d[/]:del",
             3: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]space[/]:check-in [bold #f1fa8c]d[/]:del [bold #f1fa8c]s[/]:history",
             4: "[bold #f1fa8c]a[/]:start [bold #f1fa8c]e[/]:edit [bold #f1fa8c]space[/]:end [bold #f1fa8c]h[/]:←day [bold #f1fa8c]l[/]:day→ [bold #f1fa8c]d[/]:del",
-            5: "[bold #f1fa8c]s[/]:set days [bold #f1fa8c]x[/]:export",
+            5: "[bold #f1fa8c]s[/]:set days [bold #f1fa8c]t[/]:toggle % [bold #f1fa8c]x[/]:export",
         }
 
         action_text = actions.get(self.active_panel, "")
@@ -761,8 +768,19 @@ class LazyToolApp(App):
             self._update_detail()
             return
         event_date = ev.get("date", ev["start_time"][:10])
-        new_end = f"{event_date}T{h:02d}:{m:02d}:00"
-        self.dm.edit_event_time(ev["id"], end_time=new_end)
+        new_end_dt = datetime.fromisoformat(f"{event_date}T{h:02d}:{m:02d}:00")
+        
+        # If we edited start_time in the previous step, ev["start_time"] is already updated in the DM,
+        # but the `ev` dictionary we have here is stale. Let's fetch the fresh one.
+        fresh_ev = next((e for e in self.dm._data.get("timeline", []) if e["id"] == ev["id"]), ev)
+        start_dt = datetime.fromisoformat(fresh_ev["start_time"])
+        
+        # If the newly constructed end time is before the start time, 
+        # it most likely crossed midnight into the next day.
+        if new_end_dt < start_dt:
+            new_end_dt += timedelta(days=1)
+            
+        self.dm.edit_event_time(ev["id"], end_time=new_end_dt.isoformat(timespec="seconds"))
         self._panels[4].refresh_list()
         self._update_detail()
 
@@ -906,6 +924,15 @@ class LazyToolApp(App):
                     self._update_detail()
             except ValueError:
                 pass
+
+    def action_toggle_stats_denom(self) -> None:
+        if self.active_panel == 5:
+            # Modes: 0=Logged, 1=Total, 2=Z-Score, 3=Min/Max
+            current = self.dm.settings.get("stats_bar_mode", 3)
+            next_mode = (current + 1) % 4
+            self.dm.update_setting("stats_bar_mode", next_mode)
+            self._panels[5].refresh_list()
+            self._update_detail()
 
     # ── Export stats ─────────────────────────────────────
 

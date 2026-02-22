@@ -19,6 +19,7 @@ DEFAULT_DATA = {
     "timeline": [],
     "settings": {
         "stats_days": 7,
+        "stats_bar_mode": 3,  # 0=Logged, 1=Total, 2=Z-Score, 3=Min-Max
     },
 }
 
@@ -27,6 +28,27 @@ class DataManager:
     def __init__(self):
         self._ensure_dir()
         self._data = self._load()
+        self._sanitize_data()
+
+    def _sanitize_data(self):
+        """Fix backwards timestamps in timeline events caused by old bugs."""
+        dirty = False
+        for ev in self._data.get("timeline", []):
+            if not ev.get("start_time") or not ev.get("end_time"):
+                continue
+            try:
+                start = datetime.fromisoformat(ev["start_time"])
+                end = datetime.fromisoformat(ev["end_time"])
+                if end < start:
+                    # Crossed midnight but end_time took start_time's date
+                    end += timedelta(days=1)
+                    ev["end_time"] = end.isoformat(timespec="seconds")
+                    dirty = True
+            except (ValueError, TypeError):
+                continue
+                
+        if dirty:
+            self._save()
 
     def _ensure_dir(self):
         DATA_DIR.mkdir(parents=True, exist_ok=True)

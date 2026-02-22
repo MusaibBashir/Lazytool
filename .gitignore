@@ -36,3 +36,8 @@ installer_output/
 
 # Pytest
 .pytest_cache/
+
+# Other
+Readme.md
+Readme.pdf
+Website/

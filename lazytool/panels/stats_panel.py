@@ -97,22 +97,22 @@ class StatsPanel(VerticalScroll):
             )
             yield Static("")
 
-            # Sort by hours descending
+            # Sort by hours descending and show only top 3
             sorted_activities = sorted(hours.items(), key=lambda x: x[1], reverse=True)
-            max_hours = max(hours.values()) if hours else 1
-
-            for idx, (name, h) in enumerate(sorted_activities):
+            
+            for idx, (name, h) in enumerate(sorted_activities[:3]):
                 from lazytool.panels.timeline_panel import _color_for
                 color = _color_for(idx)
-                pct = int(h / max_hours * 100) if max_hours > 0 else 0
-                bar = self._activity_bar(pct, color)
                 label = name
-                if len(label) > 12:
-                    label = label[:9] + "..."
+                if len(label) > 15:
+                    label = label[:12] + "..."
                 yield Static(
-                    f"  [{color}]■[/] {label:<12} {bar} [bold]{h:.1f}h[/]",
+                    f"  [{color}]■[/] {label:<15} [bold]{h:.1f}h[/]",
                     markup=True,
                 )
+            
+            if len(sorted_activities) > 3:
+                yield Static(f"  [dim]+ {len(sorted_activities) - 3} more...[/]", markup=True)
 
         yield Static("")
         yield Static("[dim]─────────────────────────────[/]", markup=True)
@@ -181,14 +181,69 @@ class StatsPanel(VerticalScroll):
         parts.append("")
 
         parts.extend([
-            f"[bold]Time ({days} days)[/]",
+            f"[bold]Time[/]",
             f"  Total:    [yellow]{stats['total_tracked_hours']:.1f}h[/]",
+            f"  [dim]Press [bold #f1fa8c]t[/dim] to toggle bar length formula[/]",
         ])
 
         if hours:
             sorted_acts = sorted(hours.items(), key=lambda x: x[1], reverse=True)
-            for name, h in sorted_acts[:8]:
-                parts.append(f"  • {name}: {h:.1f}h")
+            # Modes: 0=Logged, 1=Total, 2=Z-Score, 3=Min/Max
+            mode = self.data_manager.settings.get("stats_bar_mode", 3)
+            
+            # Setup denominator/stats info
+            if mode == 1:
+                denom = days * 24
+                denom_label = f"Total Time ({days}d = {denom}h)"
+            elif mode == 0:
+                denom = stats["total_tracked_hours"]
+                denom_label = f"Logged Time ({denom:.1f}h)"
+            elif mode == 3:
+                # Min-Max Normalization
+                vals = list(hours.values())
+                min_val = min(vals) if vals else 0
+                max_val = max(vals) if vals else 1
+                diff = max_val - min_val if max_val > min_val else 1.0
+                denom_label = f"Min-Max Normalization (min={min_val:.1f}h, max={max_val:.1f}h)"
+            else:
+                # Z-Score Mode
+                import math
+                vals = list(hours.values())
+                mu = sum(vals) if not vals else sum(vals) / len(vals)
+                variance = 0 if not vals else sum((v - mu) ** 2 for v in vals) / len(vals)
+                sigma = math.sqrt(variance) if variance > 0 else 1.0
+                denom_label = f"Z-Score Percentile (µ={mu:.1f}h, σ={sigma:.1f}h)"
+                
+            parts.append(f"  [dim]Bars relative to: {denom_label}[/]")
+            
+            for idx, (name, h) in enumerate(sorted_acts):
+                from lazytool.panels.timeline_panel import _color_for
+                color = _color_for(idx)
+                
+                if mode == 2:
+                    # Z-score normalization mapped to width (0-100%)
+                    import math
+                    if len(hours) <= 1 or sigma == 0:
+                        pct = 50
+                    else:
+                        z = (h - mu) / sigma
+                        pct = int(0.5 * (1.0 + math.erf(z / math.sqrt(2))) * 100)
+                elif mode == 3:
+                    # Min-Max normalization
+                    if max_val == min_val:
+                        pct = 100
+                    else:
+                        pct = int(((h - min_val) / diff) * 100)
+                else:
+                    target_denom = 1 if 'denom' not in locals() or denom == 0 else denom
+                    pct = int(h / target_denom * 100)
+                    
+                pct = min(100, max(0, pct))
+                bar = self._activity_bar(pct, color, width=40)
+                label = name
+                if len(label) > 20:
+                    label = label[:17] + "..."
+                parts.append(f"  [{color}]■[/] {label:<20} {bar} [bold]{h:.1f}h[/]")
 
         parts.append(f"\n[dim]Press [bold #f1fa8c]s[/dim] to change tracking window (current: {days} days)[/]")
         parts.append(f"[dim]Press [bold #f1fa8c]x[/dim] to export stats[/]")
