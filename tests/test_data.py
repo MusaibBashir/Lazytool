@@ -10,9 +10,6 @@ from unittest.mock import patch
 
 import pytest
 
-# We need to patch DATA_DIR and DATA_FILE before importing DataManager
-# so it doesn't touch the real ~/.lazytool/data.json
-
 
 @pytest.fixture
 def dm(tmp_path):
