@@ -1,13 +1,121 @@
-"""Data persistence layer for LazyTool — stores everything in ~/.lazytool/data.json"""
+"""Data persistence layer for LazyTool — profile-aware storage in ~/.lazytool/profiles/<name>/"""
 import json
 import os
+import shutil
 import uuid
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
 
-DATA_DIR = Path.home() / ".lazytool"
-DATA_FILE = DATA_DIR / "data.json"
+BASE_DIR = Path.home() / ".lazytool"
+PROFILES_DIR = BASE_DIR / "profiles"
+PROFILES_META = BASE_DIR / "profiles.json"
+
+# Legacy path (pre-profile era)
+_LEGACY_DATA_FILE = BASE_DIR / "data.json"
+
+
+# ── Profile management ────────────────────────────────────
+
+def _load_profiles_meta() -> dict:
+    """Load profiles metadata (active profile name + list of profiles)."""
+    if PROFILES_META.exists():
+        try:
+            with open(PROFILES_META, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return {"active": "Default", "profiles": ["Default"]}
+
+
+def _save_profiles_meta(meta: dict) -> None:
+    BASE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(PROFILES_META, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
+
+
+def _ensure_migration() -> None:
+    """Auto-migrate legacy ~/.lazytool/data.json into profiles/Default/."""
+    if _LEGACY_DATA_FILE.exists() and not (PROFILES_DIR / "Default" / "data.json").exists():
+        dest = PROFILES_DIR / "Default"
+        dest.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(_LEGACY_DATA_FILE), str(dest / "data.json"))
+        # Migrate exports too if they exist
+        legacy_exports = BASE_DIR / "exports"
+        if legacy_exports.exists():
+            shutil.move(str(legacy_exports), str(dest / "exports"))
+        # Write initial profiles meta
+        _save_profiles_meta({"active": "Default", "profiles": ["Default"]})
+
+
+def get_profile_names() -> list[str]:
+    """Return sorted list of profile names."""
+    meta = _load_profiles_meta()
+    return sorted(meta.get("profiles", ["Default"]))
+
+
+def get_active_profile() -> str:
+    """Return the currently active profile name."""
+    meta = _load_profiles_meta()
+    return meta.get("active", "Default")
+
+
+def set_active_profile(name: str) -> None:
+    """Set the active profile (persisted across restarts)."""
+    meta = _load_profiles_meta()
+    meta["active"] = name
+    if name not in meta.get("profiles", []):
+        meta.setdefault("profiles", []).append(name)
+    _save_profiles_meta(meta)
+
+
+def create_profile(name: str) -> None:
+    """Create a new profile directory and register it."""
+    profile_dir = PROFILES_DIR / name
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    meta = _load_profiles_meta()
+    if name not in meta.get("profiles", []):
+        meta.setdefault("profiles", []).append(name)
+    _save_profiles_meta(meta)
+
+
+def delete_profile(name: str) -> bool:
+    """Delete a profile. Cannot delete the last remaining profile."""
+    meta = _load_profiles_meta()
+    profiles = meta.get("profiles", [])
+    if name not in profiles or len(profiles) <= 1:
+        return False
+    profiles.remove(name)
+    if meta.get("active") == name:
+        meta["active"] = profiles[0]
+    profile_dir = PROFILES_DIR / name
+    if profile_dir.exists():
+        shutil.rmtree(str(profile_dir))
+    _save_profiles_meta(meta)
+    return True
+
+
+def rename_profile(old_name: str, new_name: str) -> bool:
+    """Rename a profile directory and update metadata. Returns True on success."""
+    new_name = new_name.strip()
+    if not new_name or old_name == new_name:
+        return False
+    meta = _load_profiles_meta()
+    profiles = meta.get("profiles", [])
+    if old_name not in profiles or new_name in profiles:
+        return False
+    # Rename directory
+    old_dir = PROFILES_DIR / old_name
+    new_dir = PROFILES_DIR / new_name
+    if old_dir.exists():
+        old_dir.rename(new_dir)
+    # Update metadata
+    idx = profiles.index(old_name)
+    profiles[idx] = new_name
+    if meta.get("active") == old_name:
+        meta["active"] = new_name
+    _save_profiles_meta(meta)
+    return True
 
 DEFAULT_DATA = {
     "todos": [],
@@ -25,10 +133,25 @@ DEFAULT_DATA = {
 
 
 class DataManager:
-    def __init__(self):
+    def __init__(self, profile: str | None = None):
+        _ensure_migration()
+        if profile is None:
+            profile = get_active_profile()
+        self._profile_name = profile
+        self._data_dir = PROFILES_DIR / profile
+        self._data_file = self._data_dir / "data.json"
+        self._exports_dir = self._data_dir / "exports"
         self._ensure_dir()
         self._data = self._load()
         self._sanitize_data()
+
+    @property
+    def profile_name(self) -> str:
+        return self._profile_name
+
+    @property
+    def exports_dir(self) -> Path:
+        return self._exports_dir
 
     def _sanitize_data(self):
         """Fix backwards timestamps in timeline events caused by old bugs."""
@@ -51,12 +174,12 @@ class DataManager:
             self._save()
 
     def _ensure_dir(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        self._data_dir.mkdir(parents=True, exist_ok=True)
 
     def _load(self) -> dict:
-        if DATA_FILE.exists():
+        if self._data_file.exists():
             try:
-                with open(DATA_FILE, "r", encoding="utf-8") as f:
+                with open(self._data_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 # Ensure all keys exist
                 for key in DEFAULT_DATA:
@@ -68,7 +191,7 @@ class DataManager:
         return json.loads(json.dumps(DEFAULT_DATA))
 
     def _save(self):
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
+        with open(self._data_file, "w", encoding="utf-8") as f:
             json.dump(self._data, f, indent=2, ensure_ascii=False)
 
     def _new_id(self) -> str:
@@ -186,9 +309,10 @@ class DataManager:
     def journal(self) -> list[dict]:
         return self._data["journal"]
 
-    def add_journal_entry(self, content: str) -> dict:
+    def add_journal_entry(self, name: str, content: str) -> dict:
         entry = {
             "id": self._new_id(),
+            "name": name,
             "content": content,
             "date": self._today(),
             "created_at": self._now(),
@@ -197,9 +321,10 @@ class DataManager:
         self._save()
         return entry
 
-    def edit_journal_entry(self, entry_id: str, content: str):
+    def edit_journal_entry(self, entry_id: str, name: str, content: str):
         for e in self._data["journal"]:
             if e["id"] == entry_id:
+                e["name"] = name
                 e["content"] = content
                 break
         self._save()
@@ -434,6 +559,19 @@ class DataManager:
             result[d] = self.get_events_for_date(d)
         return result
 
+    def get_unique_activity_names(self) -> list[str]:
+        """Return unique activity names from past timeline events, most recent first."""
+        names = []
+        seen = set()
+        for ev in reversed(self.timeline):
+            name = ev.get("name")
+            if name:
+                lower_name = name.lower()
+                if lower_name not in seen:
+                    seen.add(lower_name)
+                    names.append(name)
+        return names
+
     def get_event_duration_minutes(self, event: dict) -> float:
         """Calculate total duration of an event in minutes (full span)."""
         start = datetime.fromisoformat(event["start_time"])
@@ -465,6 +603,14 @@ class DataManager:
                     ev["start_time"] = start_time
                 if end_time is not None:
                     ev["end_time"] = end_time
+                break
+        self._save()
+
+    def edit_event_name(self, event_id: str, name: str):
+        """Update the name of a timeline event."""
+        for ev in self._data.get("timeline", []):
+            if ev["id"] == event_id:
+                ev["name"] = name
                 break
         self._save()
 

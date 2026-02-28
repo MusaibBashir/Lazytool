@@ -15,7 +15,6 @@ from lazytool.data import DataManager
 MOOD_LABELS = {5: "Amazing", 4: "Great", 3: "Good", 2: "Okay", 1: "Bad", 0: "Terrible"}
 MOOD_COLORS = {5: "#50fa7b", 4: "#8be9fd", 3: "#f1fa8c", 2: "#ffb86c", 1: "#ff79c6", 0: "#ff5555"}
 
-EXPORTS_DIR = Path.home() / ".lazytool" / "exports"
 
 
 def _mood_display(score: float) -> tuple[str, str]:
@@ -353,7 +352,8 @@ class StatsPanel(VerticalScroll):
 
     def export_to_file(self, fmt: str) -> str:
         """Export stats to a file and return the file path."""
-        EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        exports_dir = self.data_manager.exports_dir
+        exports_dir.mkdir(parents=True, exist_ok=True)
         today = date.today().isoformat()
         today_fmt = self.data_manager.fmt_date(today)
 
@@ -364,7 +364,7 @@ class StatsPanel(VerticalScroll):
             content = self.export_stats_text()
             filename = f"stats_{today_fmt}.txt"
 
-        filepath = EXPORTS_DIR / filename
+        filepath = exports_dir / filename
         with open(filepath, "w", encoding="utf-8") as f:
             f.write(content)
 

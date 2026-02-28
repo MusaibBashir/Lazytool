@@ -41,3 +41,7 @@ installer_output/
 Readme.md
 Readme.pdf
 Website/
+installer.iss
+buildexe.py
+Features.md
+test_match.py

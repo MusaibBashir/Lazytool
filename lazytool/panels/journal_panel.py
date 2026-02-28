@@ -27,15 +27,15 @@ class JournalPanel(VerticalScroll):
         # Show newest first
         sorted_entries = list(reversed(entries))
         for i, entry in enumerate(sorted_entries):
-            preview = entry["content"].replace("\n", " ")
-            if len(preview) > 25:
-                preview = preview[:22] + "..."
+            name = entry.get("name", "Untitled")
+            if len(name) > 25:
+                name = name[:22] + "..."
 
             classes = "list-item"
             if i == self.selected_index:
                 classes += " list-item-selected"
 
-            line = f"[dim]{self.data_manager.fmt_date(entry['date'])}[/] {preview}"
+            line = f"[dim]{self.data_manager.fmt_date(entry['date'])}[/] {name}"
             yield Static(line, classes=classes, markup=True)
 
     def refresh_list(self):
@@ -68,8 +68,10 @@ class JournalPanel(VerticalScroll):
         entry = self.get_selected()
         if not entry:
             return "No journal entries.\n\nPress [bold cyan]a[/] to write a new entry."
+        name = entry.get("name", "Untitled")
         return (
             f"[bold cyan]Journal Entry — {self.data_manager.fmt_date(entry['date'])}[/]\n"
+            f"[bold #f1fa8c]{name}[/]\n"
             f"[dim]─────────────────────────────────[/]\n\n"
             f"{entry['content']}\n\n"
             f"[dim]Created: {self.data_manager.fmt_time(entry['created_at'])}[/]"

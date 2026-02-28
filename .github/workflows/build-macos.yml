@@ -76,6 +76,7 @@ jobs:
             <key>CFBundleExecutable</key><string>LazyTool</string>
             <key>CFBundleIconFile</key><string>app_icon</string>
             <key>CFBundleIdentifier</key><string>com.musaibbashir.lazytool</string>
+            <key>CFBundleShortVersionString</key><string>2.1.1</string>
             <key>CFBundlePackageType</key><string>APPL</string>
             <key>LSMinimumSystemVersion</key><string>12.0</string>
           </dict>
@@ -127,8 +128,14 @@ jobs:
             dist/LazyTool-macOS.dmg
             dist/lazytool
           body: |
-            ## LazyTool macOS Release
+            ## LazyTool Release
             
+            ### What's New in v2.1.1
+            - **Multi-Profile System**: Switch between isolated profiles with Shift+P
+            - **Journal**: Multiline Support
+            - **Live Stats Refresh**: Stats panel updates automatically on any data change
+            
+            ### Downloads
             - **LazyTool-macOS.dmg**: Recommended for most users. Drag to Applications and launch.
             - **lazytool**: Standalone binary for CLI enthusiasts.
           make_latest: true

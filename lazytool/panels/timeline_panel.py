@@ -55,6 +55,10 @@ class TimelinePanel(VerticalScroll):
     def _viewed_date(self) -> str:
         return (date.today() - timedelta(days=self.view_day_offset)).isoformat()
 
+    def on_mount(self) -> None:
+        events = self.data_manager.get_events_for_date(self._viewed_date())
+        self.selected_index = max(0, len(events) - 1)
+
     # ── Sidebar: compact summary ─────────────────────────
 
     def compose(self):
@@ -163,13 +167,15 @@ class TimelinePanel(VerticalScroll):
     def prev_day(self):
         if self.view_day_offset < 7:
             self.view_day_offset += 1
-            self.selected_index = 0
+            events = self.data_manager.get_events_for_date(self._viewed_date())
+            self.selected_index = max(0, len(events) - 1)
             self.refresh_list()
 
     def next_day(self):
         if self.view_day_offset > 0:
             self.view_day_offset -= 1
-            self.selected_index = 0
+            events = self.data_manager.get_events_for_date(self._viewed_date())
+            self.selected_index = max(0, len(events) - 1)
             self.refresh_list()
 
     # ── Detail text (centre pane) ────────────────────────

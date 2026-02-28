@@ -2,17 +2,18 @@
 from __future__ import annotations
 
 import sys
+import difflib
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Static, Input, Header, Footer, Label
+from textual.widgets import Static, Input, Header, Footer, Label, TextArea
 from textual.containers import Vertical, Horizontal, VerticalScroll, Container
 from textual.reactive import reactive
 
-from lazytool.data import DataManager
+from lazytool.data import DataManager, get_profile_names, get_active_profile, set_active_profile, create_profile, rename_profile
 from lazytool.panels.todo_panel import TodoPanel
 from lazytool.panels.journal_panel import JournalPanel
 from lazytool.panels.mood_panel import MoodPanel
@@ -87,6 +88,221 @@ class InputModal(ModalScreen[str]):
 
     def action_cancel(self) -> None:
         self.dismiss(_CANCELLED)
+
+
+class AutocompleteModal(ModalScreen[str]):
+    """A modal for single-line text input with fuzzy autocomplete suggestions."""
+
+    BINDINGS = [
+        Binding("escape", "cancel", "Cancel"),
+        Binding("down", "focus_next", "Next Suggestion", show=False),
+        Binding("up", "focus_previous", "Prev Suggestion", show=False),
+    ]
+
+    CSS = """
+    AutocompleteModal {
+        align: center middle;
+        background: rgba(0, 0, 0, 0.85);
+    }
+    #auto-box {
+        width: 60;
+        height: auto;
+        max-height: 20;
+        background: #282a36;
+        border: solid #50fa7b;
+        padding: 1 2;
+    }
+    #auto-title {
+        color: #ff79c6;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #auto-input {
+        background: #44475a;
+        color: #f8f8f2;
+        border: solid #6272a4;
+        height: 3;
+    }
+    #auto-input:focus {
+        border: solid #50fa7b;
+    }
+    #auto-suggestions {
+        margin-top: 1;
+        height: auto;
+    }
+    .suggestion {
+        padding: 0 1;
+        color: #6272a4;
+        height: 1;
+    }
+    .suggestion.highlight {
+        background: #44475a;
+        color: #f1fa8c;
+        text-style: bold;
+    }
+    """
+
+    def __init__(self, title: str, suggestions: list[str], placeholder: str = "", default: str = "", **kwargs):
+        super().__init__(**kwargs)
+        self._title = title
+        self._all_suggestions = suggestions
+        self._placeholder = placeholder
+        self._default = default
+        self._matches = []
+        self._highlighted_index = -1
+
+    def compose(self) -> ComposeResult:
+        with Container(id="auto-box"):
+            yield Static(self._title, id="auto-title")
+            yield Input(
+                value=self._default,
+                placeholder=self._placeholder,
+                id="auto-input",
+            )
+            yield Vertical(id="auto-suggestions")
+
+    def on_mount(self) -> None:
+        self.query_one("#auto-input", Input).focus()
+        self._update_suggestions(self._default)
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        self._update_suggestions(event.value)
+
+    def _update_suggestions(self, value: str) -> None:
+        val = value.strip().lower()
+        if not val:
+            self._matches = []
+        else:
+            lower_to_orig = {}
+            for s in self._all_suggestions:
+                if s.lower() not in lower_to_orig:
+                    lower_to_orig[s.lower()] = s
+            matches = difflib.get_close_matches(val, list(lower_to_orig.keys()), n=3, cutoff=0.3)
+            self._matches = [lower_to_orig[m] for m in matches]
+        
+        self._highlighted_index = -1
+        self._render_suggestions()
+
+    def _render_suggestions(self) -> None:
+        container = self.query_one("#auto-suggestions", Vertical)
+        container.remove_children()
+        
+        if not self._matches:
+            return
+            
+        for i, match in enumerate(self._matches):
+            classes = "suggestion highlight" if i == self._highlighted_index else "suggestion"
+            prefix = "▶ " if i == self._highlighted_index else "  "
+            container.mount(Static(f"{prefix}{match}", classes=classes))
+
+    def action_focus_next(self) -> None:
+        if not self._matches:
+            return
+        self._highlighted_index = min(self._highlighted_index + 1, len(self._matches) - 1)
+        self._render_suggestions()
+
+    def action_focus_previous(self) -> None:
+        if not self._matches:
+            return
+        self._highlighted_index = max(-1, self._highlighted_index - 1)
+        self._render_suggestions()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if self._highlighted_index >= 0 and self._highlighted_index < len(self._matches):
+            self.dismiss(self._matches[self._highlighted_index])
+        else:
+            value = event.value.strip()
+            if value:
+                self.dismiss(value)
+
+    def action_cancel(self) -> None:
+        self.dismiss(_CANCELLED)
+
+
+# ── Journal entry modal ──────────────────────────────────
+
+class JournalEntryModal(ModalScreen[tuple[str, str]]):
+    """A modal for entering journal name and content."""
+
+    BINDINGS = [
+        Binding("escape", "cancel", "Cancel"),
+        Binding("ctrl+s", "save", "Save"),
+    ]
+
+    CSS = """
+    JournalEntryModal {
+        align: center middle;
+        background: rgba(0, 0, 0, 0.85);
+    }
+    #journal-modal-box {
+        width: 80;
+        height: auto;
+        min-height: 13;
+        background: #282a36;
+        border: solid #50fa7b;
+        padding: 1 2;
+    }
+    #journal-modal-title {
+        color: #ff79c6;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    #journal-modal-title-input {
+        background: #44475a;
+        color: #f8f8f2;
+        border: solid #6272a4;
+        height: 3;
+        margin-bottom: 1;
+    }
+    #journal-modal-title-input:focus {
+        border: solid #50fa7b;
+    }
+    #journal-modal-content-input {
+        background: #44475a;
+        color: #f8f8f2;
+        border: solid #6272a4;
+        height: 5;
+    }
+    #journal-modal-content-input:focus {
+        border: solid #50fa7b;
+    }
+    """
+
+    def __init__(self, title: str, default_name: str = "", default_content: str = "", **kwargs):
+        super().__init__(**kwargs)
+        self._title = title
+        self._default_name = default_name
+        self._default_content = default_content
+
+    def compose(self) -> ComposeResult:
+        with Container(id="journal-modal-box"):
+            yield Static(self._title, id="journal-modal-title")
+            yield Input(
+                value=self._default_name,
+                placeholder="Journal Entry Name...",
+                id="journal-modal-title-input",
+            )
+            yield TextArea(
+                text=self._default_content,
+                soft_wrap=True,
+                show_line_numbers=False,
+                id="journal-modal-content-input",
+            )
+            yield Static("\n  [dim]Press [bold #f1fa8c]ctrl+s[/] to save, [bold #f1fa8c]escape[/] to cancel[/]", markup=True)
+
+    def on_mount(self) -> None:
+        self.query_one("#journal-modal-title-input", Input).focus()
+
+    def action_save(self) -> None:
+        name = self.query_one("#journal-modal-title-input", Input).value.strip()
+        content = self.query_one("#journal-modal-content-input", TextArea).text.strip()
+        if name or content:
+            if not name:
+                name = "Untitled"
+            self.dismiss((name, content))
+
+    def action_cancel(self) -> None:
+        self.dismiss((_CANCELLED, _CANCELLED))
 
 
 # ── Mood picker modal ────────────────────────────────────
@@ -320,6 +536,7 @@ class HelpScreen(ModalScreen):
                 "  [bold #f1fa8c]s[/]          Set tracking days\n"
                 "  [bold #f1fa8c]x[/]          Export stats (.txt/.md)\n\n"
                 "[bold cyan]General[/]\n"
+                "  [bold #f1fa8c]Shift+P[/]  Switch profile\n"
                 "  [bold #f1fa8c]?[/]          Show this help\n"
                 "  [bold #f1fa8c]q[/]          Quit\n\n"
                 "[dim]Press Escape or ? to close[/]\n\n"
@@ -330,6 +547,109 @@ class HelpScreen(ModalScreen):
 
     def action_close(self) -> None:
         self.dismiss()
+
+
+# ── Profile picker modal ───────────────────────────────────
+
+class ProfilePickerModal(ModalScreen[str]):
+    """A modal for switching or creating profiles."""
+
+    BINDINGS = [
+        Binding("escape", "cancel", "Cancel"),
+        Binding("n", "new_profile", "New", show=False),
+        Binding("e", "edit_profile", "Edit", show=False),
+        Binding("1", "pick_1", "1", show=False),
+        Binding("2", "pick_2", "2", show=False),
+        Binding("3", "pick_3", "3", show=False),
+        Binding("4", "pick_4", "4", show=False),
+        Binding("5", "pick_5", "5", show=False),
+        Binding("6", "pick_6", "6", show=False),
+        Binding("7", "pick_7", "7", show=False),
+        Binding("8", "pick_8", "8", show=False),
+        Binding("9", "pick_9", "9", show=False),
+    ]
+
+    CSS = """
+    ProfilePickerModal {
+        align: center middle;
+        background: rgba(0, 0, 0, 0.85);
+    }
+    #profile-box {
+        width: 50;
+        height: auto;
+        max-height: 80%;
+        background: #282a36;
+        border: solid #bd93f9;
+        padding: 1 2;
+    }
+    #profile-title {
+        color: #bd93f9;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+    .profile-item {
+        height: 1;
+        padding: 0 1;
+        color: #f8f8f2;
+    }
+    .profile-active {
+        height: 1;
+        padding: 0 1;
+        color: #50fa7b;
+        text-style: bold;
+    }
+    #profile-hint {
+        color: #6272a4;
+        margin-top: 1;
+    }
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._profiles = get_profile_names()
+        self._active = get_active_profile()
+
+    def compose(self) -> ComposeResult:
+        with Container(id="profile-box"):
+            yield Static("Switch Profile", id="profile-title")
+            for i, name in enumerate(self._profiles[:9]):
+                marker = " *" if name == self._active else ""
+                cls = "profile-active" if name == self._active else "profile-item"
+                yield Static(
+                    f"  [bold #f1fa8c]{i + 1}[/]  {name}{marker}",
+                    classes=cls,
+                    markup=True,
+                )
+            yield Static(
+                "  [bold #f1fa8c]n[/]  Create new  |  "
+                "[bold #f1fa8c]e[/]  Rename active  |  "
+                "[bold #f1fa8c]Esc[/]  Cancel",
+                id="profile-hint",
+                markup=True,
+            )
+
+    def _pick(self, idx: int) -> None:
+        if 0 <= idx < len(self._profiles):
+            self.dismiss(self._profiles[idx])
+
+    def action_pick_1(self) -> None: self._pick(0)
+    def action_pick_2(self) -> None: self._pick(1)
+    def action_pick_3(self) -> None: self._pick(2)
+    def action_pick_4(self) -> None: self._pick(3)
+    def action_pick_5(self) -> None: self._pick(4)
+    def action_pick_6(self) -> None: self._pick(5)
+    def action_pick_7(self) -> None: self._pick(6)
+    def action_pick_8(self) -> None: self._pick(7)
+    def action_pick_9(self) -> None: self._pick(8)
+
+    def action_new_profile(self) -> None:
+        self.dismiss("__NEW__")
+
+    def action_edit_profile(self) -> None:
+        self.dismiss("__EDIT__")
+
+    def action_cancel(self) -> None:
+        self.dismiss("")
 
 
 # ── Main application ─────────────────────────────────────
@@ -363,6 +683,7 @@ class LazyToolApp(App):
         Binding("down", "move_down", "Down", show=False),
         Binding("a", "add_item", "Add", show=False),
         Binding("e", "edit_item", "Edit", show=False),
+        Binding("n", "rename_item", "Rename", show=False),
         Binding("d", "delete_item", "Delete", show=False),
         Binding("space", "toggle_item", "Toggle", show=False),
         Binding("p", "cycle_priority", "Priority", show=False),
@@ -372,6 +693,7 @@ class LazyToolApp(App):
         Binding("t", "toggle_stats_denom", "Toggle %", show=False),
         Binding("x", "export_stats", "Export", show=False),
         Binding("v", "view_all_todos", "View All", show=False),
+        Binding("P", "switch_profile", "Profiles", show=False),
     ]
 
     active_panel: reactive[int] = reactive(-1)
@@ -384,7 +706,7 @@ class LazyToolApp(App):
     def compose(self) -> ComposeResult:
         # Title bar
         yield Static(
-            "  [bold #8be9fd]LazyTool[/] [dim]— Personal Productivity[/]",
+            f"  [bold #8be9fd]LazyTool[/] [dim]— {self.dm.profile_name}[/]",
             id="right-title-bar",
             markup=True,
         )
@@ -458,6 +780,7 @@ class LazyToolApp(App):
             "  [bold #f1fa8c]s[/]          Set tracking days\n"
             "  [bold #f1fa8c]x[/]          Export stats (.txt/.md)\n\n"
             "[bold cyan]General[/]\n"
+            "  [bold #f1fa8c]Shift+P[/]  Switch profile\n"
             "  [bold #f1fa8c]?[/]          Show this help\n"
             "  [bold #f1fa8c]q[/]          Quit\n\n"
             "[bold cyan]Contact Me[/]\n"
@@ -526,7 +849,7 @@ class LazyToolApp(App):
             1: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]d[/]:del",
             2: "[bold #f1fa8c]a[/]:log mood [bold #f1fa8c]d[/]:del",
             3: "[bold #f1fa8c]a[/]:add [bold #f1fa8c]e[/]:edit [bold #f1fa8c]space[/]:check-in [bold #f1fa8c]d[/]:del [bold #f1fa8c]s[/]:history",
-            4: "[bold #f1fa8c]a[/]:start [bold #f1fa8c]e[/]:edit [bold #f1fa8c]space[/]:end [bold #f1fa8c]h[/]:←day [bold #f1fa8c]l[/]:day→ [bold #f1fa8c]d[/]:del",
+            4: "[bold #f1fa8c]a[/]:start [bold #f1fa8c]e[/]:edit [bold #f1fa8c]n[/]:rename [bold #f1fa8c]space[/]:end [bold #f1fa8c]h[/]:←day [bold #f1fa8c]l[/]:day→ [bold #f1fa8c]d[/]:del",
             5: "[bold #f1fa8c]s[/]:set days [bold #f1fa8c]t[/]:toggle % [bold #f1fa8c]x[/]:export",
         }
 
@@ -537,6 +860,10 @@ class LazyToolApp(App):
     def _switch_panel(self, index: int) -> None:
         self.active_panel = index
         self._update_active_panel()
+
+    def _refresh_stats(self) -> None:
+        """Keep the Stats panel up-to-date after any data mutation."""
+        self._panels[5].refresh_list()
 
     # ── Panel switching (number keys) ────────────────────
 
@@ -576,7 +903,7 @@ class LazyToolApp(App):
             )
         elif idx == 1:  # Journal
             self.push_screen(
-                InputModal("New Journal Entry", placeholder="Write your thoughts..."),
+                JournalEntryModal("New Journal Entry"),
                 callback=self._on_add_journal,
             )
         elif idx == 2:  # Moods
@@ -597,8 +924,9 @@ class LazyToolApp(App):
                     callback=lambda yes: self._on_end_then_start(active, yes),
                 )
             else:
+                suggestions = self.dm.get_unique_activity_names()
                 self.push_screen(
-                    InputModal("Start Activity", placeholder="e.g. Studying, Working, Reading..."),
+                    AutocompleteModal("Start Activity", suggestions=suggestions, placeholder="e.g. Studying, Working, Reading..."),
                     callback=self._on_start_event,
                 )
 
@@ -607,16 +935,20 @@ class LazyToolApp(App):
             self.dm.add_todo(value)
             panel = self._panels[0]
             panel.refresh_list()
+            self._refresh_stats()
             self._update_detail()
             self._update_status_bar()
 
-    def _on_add_journal(self, value: str) -> None:
-        if value and value != _CANCELLED:
-            self.dm.add_journal_entry(value)
-            panel = self._panels[1]
-            panel.selected_index = 0
-            panel.refresh_list()
-            self._update_detail()
+    def _on_add_journal(self, result) -> None:
+        if isinstance(result, tuple):
+            name, content = result
+            if name != _CANCELLED and content != _CANCELLED:
+                self.dm.add_journal_entry(name, content)
+                panel = self._panels[1]
+                panel.selected_index = 0
+                panel.refresh_list()
+                self._refresh_stats()
+                self._update_detail()
 
     def _on_add_mood(self, value: str) -> None:
         if value and value != _CANCELLED:
@@ -624,6 +956,7 @@ class LazyToolApp(App):
             panel = self._panels[2]
             panel.selected_index = 0
             panel.refresh_list()
+            self._refresh_stats()
             self._update_detail()
 
     def _on_add_goal(self, value: str) -> None:
@@ -643,22 +976,28 @@ class LazyToolApp(App):
             self.dm.add_goal(title, value)
             panel = self._panels[3]
             panel.refresh_list()
+            self._refresh_stats()
             self._update_detail()
 
     def _on_start_event(self, value: str) -> None:
         if value and value != _CANCELLED:
             self.dm.start_event(value)
+            events = self.dm.get_events_for_date(self._panels[4]._viewed_date())
+            self._panels[4].selected_index = max(0, len(events) - 1)
             self._panels[4].refresh_list()
+            self._refresh_stats()
             self._update_detail()
 
     def _on_end_then_start(self, active: dict, confirmed: bool) -> None:
         if confirmed:
             self.dm.end_event(active["id"])
             self._panels[4].refresh_list()
+            self._refresh_stats()
             self._update_detail()
             # Ask for new activity
+            suggestions = self.dm.get_unique_activity_names()
             self.push_screen(
-                InputModal("Start New Activity", placeholder="What are you doing now?"),
+                AutocompleteModal("Start New Activity", suggestions=suggestions, placeholder="What are you doing now?"),
                 callback=self._on_start_event,
             )
         # If not confirmed, just stay
@@ -678,7 +1017,11 @@ class LazyToolApp(App):
             entry = self._panels[1].get_selected()
             if entry:
                 self.push_screen(
-                    InputModal("Edit Journal Entry", default=entry["content"]),
+                    JournalEntryModal(
+                        "Edit Journal Entry",
+                        default_name=entry.get("name", "Untitled"),
+                        default_content=entry.get("content", "")
+                    ),
                     callback=lambda v: self._on_edit_journal(entry["id"], v),
                 )
         elif idx == 3:  # Goals
@@ -699,22 +1042,44 @@ class LazyToolApp(App):
                     callback=self._on_edit_event_start,
                 )
 
+    def action_rename_item(self) -> None:
+        idx = self.active_panel
+        if idx == 4:  # Timeline
+            ev = self._panels[4].get_selected()
+            if ev:
+                self.push_screen(
+                    InputModal("Rename Activity", default=ev.get("name", "")),
+                    callback=lambda v: self._on_rename_event(ev["id"], v),
+                )
+
+    def _on_rename_event(self, event_id: str, value: str) -> None:
+        if value and value != _CANCELLED:
+            self.dm.edit_event_name(event_id, value)
+            self._panels[4].refresh_list()
+            self._refresh_stats()
+            self._update_detail()
+
     def _on_edit_todo(self, todo_id: str, value: str) -> None:
         if value and value != _CANCELLED:
             self.dm.edit_todo(todo_id, value)
             self._panels[0].refresh_list()
+            self._refresh_stats()
             self._update_detail()
 
-    def _on_edit_journal(self, entry_id: str, value: str) -> None:
-        if value and value != _CANCELLED:
-            self.dm.edit_journal_entry(entry_id, value)
-            self._panels[1].refresh_list()
-            self._update_detail()
+    def _on_edit_journal(self, entry_id: str, result) -> None:
+        if isinstance(result, tuple):
+            name, content = result
+            if name != _CANCELLED and content != _CANCELLED:
+                self.dm.edit_journal_entry(entry_id, name, content)
+                self._panels[1].refresh_list()
+                self._refresh_stats()
+                self._update_detail()
 
     def _on_edit_goal_title(self, goal_id: str, value: str) -> None:
         if value and value != _CANCELLED:
             self.dm.edit_goal(goal_id, title=value)
             self._panels[3].refresh_list()
+            self._refresh_stats()
             self._update_detail()
 
     def _on_edit_event_start(self, value: str) -> None:
@@ -746,6 +1111,7 @@ class LazyToolApp(App):
         else:
             # Active event, no end time to edit
             self._panels[4].refresh_list()
+            self._refresh_stats()
             self._update_detail()
 
     def _on_edit_event_end(self, value: str) -> None:
@@ -782,6 +1148,7 @@ class LazyToolApp(App):
             
         self.dm.edit_event_time(ev["id"], end_time=new_end_dt.isoformat(timespec="seconds"))
         self._panels[4].refresh_list()
+        self._refresh_stats()
         self._update_detail()
 
     # ── Delete item ──────────────────────────────────────
@@ -793,6 +1160,7 @@ class LazyToolApp(App):
             if todo:
                 self.dm.delete_todo(todo["id"])
                 self._panels[0].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
                 self._update_status_bar()
         elif idx == 1:
@@ -800,24 +1168,28 @@ class LazyToolApp(App):
             if entry:
                 self.dm.delete_journal_entry(entry["id"])
                 self._panels[1].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
         elif idx == 2:
             mood = self._panels[2].get_selected()
             if mood:
                 self.dm.delete_mood(mood["id"])
                 self._panels[2].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
         elif idx == 3:
             goal = self._panels[3].get_selected()
             if goal:
                 self.dm.delete_goal(goal["id"])
                 self._panels[3].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
         elif idx == 4:
             ev = self._panels[4].get_selected()
             if ev:
                 self.dm.delete_event(ev["id"])
                 self._panels[4].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
 
     # ── Toggle / Space ───────────────────────────────────
@@ -829,6 +1201,7 @@ class LazyToolApp(App):
             if todo:
                 self.dm.toggle_todo(todo["id"])
                 self._panels[0].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
                 self._update_status_bar()
         elif idx == 3:  # Goals — check in for today
@@ -836,12 +1209,14 @@ class LazyToolApp(App):
             if goal:
                 self.dm.check_in_goal(goal["id"])
                 self._panels[3].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
         elif idx == 4:  # Timeline — end current activity
             active = self.dm.get_active_event()
             if active:
                 self.dm.end_event(active["id"])
                 self._panels[4].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
                 self._update_status_bar()
 
@@ -853,6 +1228,7 @@ class LazyToolApp(App):
             if todo:
                 self.dm.cycle_priority(todo["id"])
                 self._panels[0].refresh_list()
+                self._refresh_stats()
                 self._update_detail()
 
     # ── Help ─────────────────────────────────────────────
@@ -959,6 +1335,74 @@ class LazyToolApp(App):
         if self.active_panel == 0:
             detail = self.query_one("#centre-detail", Static)
             detail.update(self._panels[0].get_all_todos_text())
+
+    # ── Profile switching ─────────────────────────────────
+
+    def action_switch_profile(self) -> None:
+        self.push_screen(
+            ProfilePickerModal(),
+            callback=self._on_profile_picked,
+        )
+
+    def _on_profile_picked(self, value: str) -> None:
+        if not value:
+            return  # cancelled
+        if value == "__NEW__":
+            self.push_screen(
+                InputModal("New Profile Name", placeholder="e.g. Work, Personal, School..."),
+                callback=self._on_new_profile_name,
+            )
+            return
+        if value == "__EDIT__":
+            self.push_screen(
+                InputModal("Rename Profile", placeholder="Enter new name", default=self.dm.profile_name),
+                callback=self._on_rename_profile,
+            )
+            return
+        # Switch to existing profile
+        if value != self.dm.profile_name:
+            set_active_profile(value)
+            self._reload_profile(value)
+
+    def _on_new_profile_name(self, value: str) -> None:
+        if not value or value == _CANCELLED:
+            return
+        name = value.strip()
+        if not name:
+            return
+        create_profile(name)
+        set_active_profile(name)
+        self._reload_profile(name)
+
+    def _on_rename_profile(self, value: str) -> None:
+        if not value or value == _CANCELLED:
+            return
+        new_name = value.strip()
+        if not new_name:
+            return
+        old_name = self.dm.profile_name
+        if rename_profile(old_name, new_name):
+            self._reload_profile(new_name)
+
+    def _reload_profile(self, profile_name: str) -> None:
+        """Reinitialize DataManager for a new profile and refresh everything."""
+        self.dm = DataManager(profile_name)
+        # Update all panels to use the new data manager
+        for panel in self._panels:
+            panel.data_manager = self.dm
+            panel.selected_index = 0
+            panel.refresh_list()
+        # Reset timeline day view to today
+        self._panels[4].view_day_offset = 0
+        self._panels[4].refresh_list()
+        # Update title bar
+        title_bar = self.query_one("#right-title-bar", Static)
+        title_bar.update(
+            f"  [bold #8be9fd]LazyTool[/] [dim]— {profile_name}[/]"
+        )
+        # Reset to no active panel (welcome screen)
+        self.active_panel = -1
+        self._update_active_panel()
 
     # ── Help ─────────────────────────────────────────────
 
