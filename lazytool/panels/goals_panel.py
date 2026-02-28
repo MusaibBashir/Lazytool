@@ -21,6 +21,7 @@ def _fire_str(streak: int) -> str:
 class GoalsPanel(VerticalScroll):
     """Displays goals with streaks. Check in daily to build streaks."""
 
+    can_focus = False
     selected_index: reactive[int] = reactive(0)
 
     def __init__(self, data_manager: DataManager, **kwargs):

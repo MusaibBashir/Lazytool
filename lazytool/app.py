@@ -936,8 +936,7 @@ class LazyToolApp(App):
             panel = self._panels[0]
             panel.refresh_list()
             self._refresh_stats()
-            self._update_detail()
-            self._update_status_bar()
+            self._update_active_panel()
 
     def _on_add_journal(self, result) -> None:
         if isinstance(result, tuple):
@@ -948,7 +947,7 @@ class LazyToolApp(App):
                 panel.selected_index = 0
                 panel.refresh_list()
                 self._refresh_stats()
-                self._update_detail()
+                self._update_active_panel()
 
     def _on_add_mood(self, value: str) -> None:
         if value and value != _CANCELLED:
@@ -957,7 +956,7 @@ class LazyToolApp(App):
             panel.selected_index = 0
             panel.refresh_list()
             self._refresh_stats()
-            self._update_detail()
+            self._update_active_panel()
 
     def _on_add_goal(self, value: str) -> None:
         if value and value != _CANCELLED:
@@ -977,7 +976,7 @@ class LazyToolApp(App):
             panel = self._panels[3]
             panel.refresh_list()
             self._refresh_stats()
-            self._update_detail()
+            self._update_active_panel()
 
     def _on_start_event(self, value: str) -> None:
         if value and value != _CANCELLED:

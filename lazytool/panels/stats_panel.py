@@ -27,6 +27,7 @@ def _mood_display(score: float) -> tuple[str, str]:
 class StatsPanel(VerticalScroll):
     """Displays aggregate productivity stats."""
 
+    can_focus = False
     selected_index: reactive[int] = reactive(0)
 
     def __init__(self, data_manager: DataManager, **kwargs):

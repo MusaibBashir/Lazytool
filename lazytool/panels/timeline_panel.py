@@ -44,6 +44,7 @@ class TimelinePanel(VerticalScroll):
     Centre detail shows the full coloured timeline bar and event list.
     """
 
+    can_focus = False
     selected_index: reactive[int] = reactive(0)
     view_day_offset: reactive[int] = reactive(0)  # 0 = today, 1 = yesterday, etc.
 

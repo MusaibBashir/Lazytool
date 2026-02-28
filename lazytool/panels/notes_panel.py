@@ -11,6 +11,7 @@ from lazytool.data import DataManager
 class NotesPanel(VerticalScroll):
     """Displays quick scratch notes. Titles are optional."""
 
+    can_focus = False
     selected_index: reactive[int] = reactive(0)
 
     def __init__(self, data_manager: DataManager, **kwargs):

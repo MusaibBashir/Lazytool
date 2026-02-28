@@ -13,6 +13,7 @@ PRIORITY_COLORS = {"high": "red", "medium": "yellow", "low": "white"}
 class TodoPanel(VerticalScroll):
     """Displays and manages todo items with smart sorting."""
 
+    can_focus = False
     selected_index: reactive[int] = reactive(0)
 
     def __init__(self, data_manager: DataManager, **kwargs):

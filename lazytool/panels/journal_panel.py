@@ -9,6 +9,7 @@ from textual.reactive import reactive
 class JournalPanel(VerticalScroll):
     """Displays and manages journal entries."""
 
+    can_focus = False
     selected_index: reactive[int] = reactive(0)
 
     def __init__(self, data_manager, **kwargs):
