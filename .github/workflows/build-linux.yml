@@ -1,0 +1,62 @@
+name: Build Linux App
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Existing tag to release the binary to (e.g. v2.1.1)'
+        required: true
+        default: 'v2.1.1'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build binary with script
+        run: |
+          python buildexe_linux.py
+          mv dist/lazytool dist/lazytool-linux
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lazytool-linux
+          path: dist/lazytool-linux
+
+  release:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          name: lazytool-linux
+          path: dist/
+          
+      - name: Update Existing Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.tag_name }}
+          files: dist/lazytool-linux
