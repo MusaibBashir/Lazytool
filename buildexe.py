@@ -9,6 +9,7 @@ def main():
         "--collect-all", "textual",
         "--collect-all", "rich",
         "--add-data", "lazytool\\app.tcss;lazytool",
+        "--add-data", "ascii-art.txt;.",
         "--icon=app_icon.ico",
         "--name", "lazytool",
         "--clean",

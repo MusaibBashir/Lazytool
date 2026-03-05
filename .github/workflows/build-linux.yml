@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Existing tag to release the binary to (e.g. v2.1.1)'
+        description: 'Existing tag to release the binary to (e.g. v2.2.0)'
         required: true
-        default: 'v2.1.1'
+        default: 'v2.2.0'
 
 permissions:
   contents: write

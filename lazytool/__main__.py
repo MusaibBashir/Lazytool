@@ -1,9 +1,24 @@
 """Entry point for LazyTool — run with `python -m lazytool` or `lazytool`."""
+import os
 import sys
 import traceback
 
+# Subcommands that trigger CLI mode instead of the TUI
+_CLI_COMMANDS = {"todo", "t", "timeline", "tl", "mood", "m", "journal", "j", "goal", "g"}
+
 
 def main():
+    # If the first real argument is a known CLI subcommand, hand off to the CLI
+    if len(sys.argv) > 1 and sys.argv[1] in _CLI_COMMANDS:
+        from lazytool.cli import cli_main
+        cli_main()
+        return
+    # Also handle --help / --profile flags for the CLI
+    if len(sys.argv) > 1 and sys.argv[1] in ("--profile", "-P", "--help", "-h", "-help"):
+        from lazytool.cli import cli_main
+        cli_main()
+        return
+
     try:
         # Give LazyTool its own taskbar identity on Windows
         import platform
@@ -11,11 +26,10 @@ def main():
             import ctypes
             # Separate taskbar group from terminal
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "musaib.lazytool.app.2.1.1"
+                "musaib.lazytool.app.2.2.0"
             )
             # Set the console window icon
             try:
-                import sys, os
                 if getattr(sys, 'frozen', False):
                     base = sys._MEIPASS
                 else:
